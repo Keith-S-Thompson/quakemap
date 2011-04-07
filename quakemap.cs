@@ -55,11 +55,6 @@ struct Quake
 
 public class WebTest
 {
-    static char[] delim(char c)
-    {
-        return new char[] { c };
-    }
-
     static public void Main()
     {
         WebRequest request = WebRequest.Create (Constants.url);
@@ -78,7 +73,7 @@ public class WebTest
             using (StreamReader reader = new StreamReader (response.GetResponseStream(), Encoding.ASCII))
             {
                 string line1 = reader.ReadLine();
-                string[] headers = line1.Split(delim(','), StringSplitOptions.None);
+                string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
                 foreach (string header in headers)
                 {
                     Console.WriteLine('"' + header + '"');
