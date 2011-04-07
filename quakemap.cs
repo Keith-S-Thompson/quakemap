@@ -22,6 +22,8 @@ struct Constants
     public static int width  = 2000;
     public static int height = 1000;
     public static string imageFile = "/home/kst/quakes.png";
+    public static int black = Color.Black.ToArgb();
+    public static int white = Color.White.ToArgb();
 }
 
 struct Quake
@@ -171,6 +173,13 @@ public class WebTest
 
                 Bitmap bitmap = new Bitmap(Constants.width, Constants.height);
 
+                Console.WriteLine("Experiment: setting and getting one white pixel:");
+                {
+                    Console.WriteLine("Setting " + Color.White);
+                    bitmap.SetPixel(0, 0, Color.White);
+                    Console.WriteLine("Getting " + bitmap.GetPixel(0, 0));
+                }
+
                 Console.WriteLine("Initializing blank screen");
                 for (int y = 0; y < Constants.height; y ++)
                 {
@@ -185,6 +194,13 @@ public class WebTest
                 string shore;
                 int shorePoints = 0;
                 int shorePixels = 0;
+                int traceCount = 0;
+                Console.WriteLine("Color.Black = " + Color.Black);
+                Console.WriteLine("Color.White = " + Color.White);
+                Console.WriteLine("Color.Blue  = " + Color.Blue );
+                Console.WriteLine("Color(0,0,0)       = " + Color.FromArgb(0,0,0));
+                Console.WriteLine("Color(255,255,255) = " + Color.FromArgb(255,255,255));
+                Console.WriteLine("Color(0,0,255)     = " + Color.FromArgb(0,0,255));
                 while ((shore = shores.ReadLine()) != null)
                 {
                     string[] words = shore.Split(new Char[] {' '});
@@ -195,14 +211,37 @@ public class WebTest
                     int x = (int)((lon + 180.0) / 360.0 * Constants.width);
                     int y = (int)((lat +  90.0) / 180.0 * Constants.height);
                     y = Constants.height - y;
-                    shorePoints ++;
-                    if (bitmap.GetPixel(x, y) != Color.Black)
+                    if (traceCount < 10)
                     {
+                        Color before = bitmap.GetPixel(x, y);
+                        Console.Write("Before: pixel(" + x + "," + y + ") = " + before);
+                        if      (before.Equals(Color.Black)) Console.WriteLine(" = Color.Black");
+                        else if (before.Equals(Color.White)) Console.WriteLine(" = Color.White");
+                        else if (before.ToArgb() == Constants.black) Console.WriteLine(" matches Color.Black");
+                        else if (before.ToArgb() == Constants.white) Console.WriteLine(" matches Color.White");
+                        else Console.WriteLine();
+                    }
+                    shorePoints ++;
+                    if (bitmap.GetPixel(x, y).ToArgb() != Constants.black)
+                    {
+                        if (traceCount < 10) Console.WriteLine("Setting to black");
                         bitmap.SetPixel(x, y, Color.Black);
                         shorePixels ++;
                     }
+                    if (traceCount < 10)
+                    {
+                        Color after = bitmap.GetPixel(x, y);
+                        Console.Write("After:  pixel(" + x + "," + y + ") = " + after);
+                        if      (after.Equals(Color.Black)) Console.WriteLine(" = Color.Black");
+                        else if (after.Equals(Color.White)) Console.WriteLine(" = Color.White");
+                        else if (after.ToArgb() == Constants.black) Console.WriteLine(" matches Color.Black");
+                        else if (after.ToArgb() == Constants.white) Console.WriteLine(" matches Color.White");
+                        else Console.WriteLine();
+                        Console.WriteLine();
+                    }
+                    traceCount ++;
                 }
-                Console.WriteLine("Plotted " + shorePixels + " for " + shorePoints + " points");
+                Console.WriteLine("Plotted " + shorePixels + " pixels for " + shorePoints + " points");
 
                 Console.WriteLine("Setting axes");
                 for (int y = 0; y < Constants.height; y ++)
