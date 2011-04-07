@@ -200,11 +200,15 @@ public class WebTest
                 Console.WriteLine("Setting axes");
                 for (int y = 0; y < Constants.height; y ++)
                 {
-                    bitmap.SetPixel(Constants.width/2, y, Color.Black);
+                    bitmap.SetPixel(0,                 y, Color.Blue);
+                    bitmap.SetPixel(Constants.width/2, y, Color.Blue);
+                    bitmap.SetPixel(Constants.width-1, y, Color.Blue);
                 }
                 for (int x = 0; x < Constants.width; x ++)
                 {
-                    bitmap.SetPixel(x, Constants.height/2, Color.Black);
+                    bitmap.SetPixel(x, 0,                  Color.Blue);
+                    bitmap.SetPixel(x, Constants.height/2, Color.Blue);
+                    bitmap.SetPixel(x, Constants.height-1, Color.Blue);
                 }
 
                 Color[] sym = new Color[10];
