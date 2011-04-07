@@ -21,8 +21,9 @@ struct Constants
     public static TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
     public static int width  = 2000;
     public static int height = 1000;
-    public static string imageFile = "/home/kst/quakes.png";
+    public static string imageFile = "/home/kst/public_html/quakes.png";
     public static int black = Color.Black.ToArgb();
+    public static int gray  = Color.Gray.ToArgb();
     public static int white = Color.White.ToArgb();
 }
 
@@ -55,6 +56,38 @@ struct Quake
 
 public class WebTest
 {
+    static public Color magToColor(double magnitude)
+    {
+        // 1.0: green
+        // 5.0: blue
+        // 9.0: red
+        // Intermediate values are interpolated
+        int red, green, blue;
+        if (magnitude <= 1.0)
+        {
+            return Color.Green;
+        }
+        else if (magnitude <= 5.0)
+        {
+            double x = (magnitude - 1.0) / 4.0; // 0.0..1.0
+            blue = (int)(x * 255);
+            green = 255 - blue;
+            red = 0;
+        }
+        else if (magnitude <= 9.0)
+        {
+            double x = (magnitude - 5.0) / 4.0; // 0.0..1.0
+            green = 0;
+            red = (int)(x * 255);
+            blue = 255 - red;
+        }
+        else
+        {
+            return Color.Red;
+        }
+        return Color.FromArgb(red, green, blue);
+    }
+
     static public void Main()
     {
         WebRequest request = WebRequest.Create (Constants.url);
@@ -168,12 +201,14 @@ public class WebTest
 
                 Bitmap bitmap = new Bitmap(Constants.width, Constants.height);
 
-                Console.WriteLine("Experiment: setting and getting one white pixel:");
-                {
-                    Console.WriteLine("Setting " + Color.White);
-                    bitmap.SetPixel(0, 0, Color.White);
-                    Console.WriteLine("Getting " + bitmap.GetPixel(0, 0));
-                }
+#if UNDEF
+*               Console.WriteLine("Experiment: setting and getting one white pixel:");
+*               {
+*                   Console.WriteLine("Setting " + Color.White);
+*                   bitmap.SetPixel(0, 0, Color.White);
+*                   Console.WriteLine("Getting " + bitmap.GetPixel(0, 0));
+*               }
+#endif
 
                 Console.WriteLine("Initializing blank screen");
                 for (int y = 0; y < Constants.height; y ++)
@@ -189,13 +224,6 @@ public class WebTest
                 string shore;
                 int shorePoints = 0;
                 int shorePixels = 0;
-                int traceCount = 0;
-                Console.WriteLine("Color.Black = " + Color.Black);
-                Console.WriteLine("Color.White = " + Color.White);
-                Console.WriteLine("Color.Blue  = " + Color.Blue );
-                Console.WriteLine("Color(0,0,0)       = " + Color.FromArgb(0,0,0));
-                Console.WriteLine("Color(255,255,255) = " + Color.FromArgb(255,255,255));
-                Console.WriteLine("Color(0,0,255)     = " + Color.FromArgb(0,0,255));
                 while ((shore = shores.ReadLine()) != null)
                 {
                     string[] words = shore.Split(new Char[] {' '});
@@ -206,60 +234,39 @@ public class WebTest
                     int x = (int)((lon + 180.0) / 360.0 * Constants.width);
                     int y = (int)((lat +  90.0) / 180.0 * Constants.height);
                     y = Constants.height - y;
-                    if (traceCount < 10)
-                    {
-                        Color before = bitmap.GetPixel(x, y);
-                        Console.Write("Before: pixel(" + x + "," + y + ") = " + before);
-                        if      (before.Equals(Color.Black)) Console.WriteLine(" = Color.Black");
-                        else if (before.Equals(Color.White)) Console.WriteLine(" = Color.White");
-                        else if (before.ToArgb() == Constants.black) Console.WriteLine(" matches Color.Black");
-                        else if (before.ToArgb() == Constants.white) Console.WriteLine(" matches Color.White");
-                        else Console.WriteLine();
-                    }
                     shorePoints ++;
-                    if (bitmap.GetPixel(x, y).ToArgb() != Constants.black)
+                    if (bitmap.GetPixel(x, y).ToArgb() != Constants.gray)
                     {
-                        if (traceCount < 10) Console.WriteLine("Setting to black");
-                        bitmap.SetPixel(x, y, Color.Black);
+                        bitmap.SetPixel(x, y, Color.Gray);
                         shorePixels ++;
                     }
-                    if (traceCount < 10)
-                    {
-                        Color after = bitmap.GetPixel(x, y);
-                        Console.Write("After:  pixel(" + x + "," + y + ") = " + after);
-                        if      (after.Equals(Color.Black)) Console.WriteLine(" = Color.Black");
-                        else if (after.Equals(Color.White)) Console.WriteLine(" = Color.White");
-                        else if (after.ToArgb() == Constants.black) Console.WriteLine(" matches Color.Black");
-                        else if (after.ToArgb() == Constants.white) Console.WriteLine(" matches Color.White");
-                        else Console.WriteLine();
-                        Console.WriteLine();
-                    }
-                    traceCount ++;
                 }
                 Console.WriteLine("Plotted " + shorePixels + " pixels for " + shorePoints + " points");
 
                 Console.WriteLine("Setting axes");
                 for (int y = 0; y < Constants.height; y ++)
                 {
-                    bitmap.SetPixel(0,                 y, Color.Blue);
-                    bitmap.SetPixel(Constants.width/2, y, Color.Blue);
-                    bitmap.SetPixel(Constants.width-1, y, Color.Blue);
+                    bitmap.SetPixel(0,                 y, Color.LightGray);
+                    bitmap.SetPixel(Constants.width/2, y, Color.LightGray);
+                    bitmap.SetPixel(Constants.width-1, y, Color.LightGray);
                 }
                 for (int x = 0; x < Constants.width; x ++)
                 {
-                    bitmap.SetPixel(x, 0,                  Color.Blue);
-                    bitmap.SetPixel(x, Constants.height/2, Color.Blue);
-                    bitmap.SetPixel(x, Constants.height-1, Color.Blue);
+                    bitmap.SetPixel(x, 0,                  Color.LightGray);
+                    bitmap.SetPixel(x, Constants.height/2, Color.LightGray);
+                    bitmap.SetPixel(x, Constants.height-1, Color.LightGray);
                 }
 
-                Color[] sym = new Color[10];
-                for (int i = 0; i < 10; i ++)
-                {
-                    int red = i * 25;
-                    int green = 255 - red;
-                    int blue = 0;
-                    sym[i] = Color.FromArgb(red, green, blue);
-                }
+#if UNDEF
+*               Color[] sym = new Color[10];
+*               for (int i = 0; i < 10; i ++)
+*               {
+*                   int red = i * 25;
+*                   int green = 255 - red;
+*                   int blue = 0;
+*                   sym[i] = Color.FromArgb(red, green, blue);
+*               }
+#endif
 
                 Console.WriteLine("Iterating over quakes");
                 foreach (Quake q in quakes)
@@ -271,7 +278,7 @@ public class WebTest
                     int y = (int)((q.Lat +  90.0) / 180.0 * Constants.height);
                     y = Constants.height - y;
                     // Console.Write("x = " + x + ", y = " + y + ", mag = " + (int)q.Magnitude);
-                    Color symbol = sym[(int)q.Magnitude];
+                    // Color symbol = sym[(int)q.Magnitude];
                  // if (! Char.IsDigit(screen[y,x][0]) || symbol > screen[y,x][0])
                  // {
                  //     if (q.age <= Constants.oneHour)
@@ -287,7 +294,8 @@ public class WebTest
                  //         screen[y,x] = "" + symbol;
                  //     }
                  // }
-                    bitmap.SetPixel(x, y, symbol);
+                    // bitmap.SetPixel(x, y, symbol);
+                    bitmap.SetPixel(x, y, magToColor(q.Magnitude));
                     // Console.WriteLine("screen[" + y + "," + x + "] = " + screen[y,x]);
                 }
                 Console.WriteLine("Saving to " + Constants.imageFile);
