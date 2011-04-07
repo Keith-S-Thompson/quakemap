@@ -183,6 +183,8 @@ public class WebTest
                 Console.WriteLine("Settings shores");
                 StreamReader shores = new StreamReader("/home/kst/shores.txt");
                 string shore;
+                int shorePoints = 0;
+                int shorePixels = 0;
                 while ((shore = shores.ReadLine()) != null)
                 {
                     string[] words = shore.Split(new Char[] {' '});
@@ -193,9 +195,14 @@ public class WebTest
                     int x = (int)((lon + 180.0) / 360.0 * Constants.width);
                     int y = (int)((lat +  90.0) / 180.0 * Constants.height);
                     y = Constants.height - y;
-                    bitmap.SetPixel(x, y, Color.Black);
+                    shorePoints ++;
+                    if (bitmap.GetPixel(x, y) != Color.Black)
+                    {
+                        bitmap.SetPixel(x, y, Color.Black);
+                        shorePixels ++;
+                    }
                 }
-
+                Console.WriteLine("Plotted " + shorePixels + " for " + shorePoints + " points");
 
                 Console.WriteLine("Setting axes");
                 for (int y = 0; y < Constants.height; y ++)
