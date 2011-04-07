@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.11 2011/04/07 22:08:24 kst Exp $
+// $Id: quakemap.cs,v 1.12 2011/04/07 22:14:03 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -15,14 +15,11 @@ struct Constants
 {
     public static readonly CultureInfo enUS = new CultureInfo("en-US");
     public static readonly DateTime now = DateTime.UtcNow;
-    public static readonly URL url = new URL("http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt");
-    public static readonly FileName shoresFile = new FileName("/home/kst/shores.txt");
+    public static readonly URL quakeData = new URL("http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt");
+    public static readonly URL shoreData = new URL("http://smov.org/~kst/shores.txt");
     public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
-    public static readonly string reverseVideo = "\x1b[3m";
-    public static readonly string bold         = "\x1b[1m";
-    public static readonly string plain        = "\x1b[m";
-    public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
-    public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
+//  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
+//  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
     public static readonly int width  = 1600;
     public static readonly int height =  800;
     public static readonly FileName imageFile = new FileName("/home/kst/public_html/quakes.png");
@@ -143,7 +140,7 @@ public class QuakeMap
     {
         Console.WriteLine("quakemap");
 
-        using (StreamReader reader = Constants.url.Open())
+        using (StreamReader reader = Constants.quakeData.Open())
         {
             string line1 = reader.ReadLine();
             string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
@@ -251,7 +248,7 @@ public class QuakeMap
             }
 
             Console.WriteLine("Setting shores");
-            StreamReader shores = Constants.shoresFile.Open();
+            StreamReader shores = Constants.shoreData.Open();
             string shore;
             int shorePoints = 0;
             int shorePixels = 0;
