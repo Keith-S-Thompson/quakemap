@@ -102,7 +102,7 @@ struct Quake
     }
 }
 
-public class WebTest
+public class QuakeMap
 {
     static public Color magToColor(double magnitude)
     {
@@ -138,7 +138,7 @@ public class WebTest
 
     static public void Main()
     {
-        Console.WriteLine("web_test2");
+        Console.WriteLine("quakemap");
 
         using (StreamReader reader = Constants.url.Open())
         {
@@ -247,7 +247,7 @@ public class WebTest
                 }
             }
 
-            Console.WriteLine("Settings shores");
+            Console.WriteLine("Setting shores");
             StreamReader shores = Constants.shoresFile.Open();
             string shore;
             int shorePoints = 0;
@@ -269,7 +269,9 @@ public class WebTest
                     shorePixels ++;
                 }
             }
-            Console.WriteLine("Plotted " + shorePixels + " pixels for " + shorePoints + " points");
+            double percentage = (double)shorePixels / (double)shorePoints * 100.0;
+            Console.WriteLine("Plotted " + shorePixels + " pixels for " + shorePoints + " points" +
+                              " (" + percentage.ToString("0.##") + "%)");
 
             Console.WriteLine("Setting axes");
             for (int y = 0; y < Constants.height; y ++)
