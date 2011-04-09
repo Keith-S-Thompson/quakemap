@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.14 2011/04/09 21:19:14 kst Exp $
+// $Id: quakemap.cs,v 1.15 2011/04/09 21:37:04 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -15,65 +15,30 @@ struct Constants
 {
     public static readonly CultureInfo enUS = new CultureInfo("en-US");
     public static readonly DateTime now = DateTime.UtcNow;
-    // public static readonly URL quakeData = new URL("http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt");
-    public static readonly FileName quakeData = new FileName("/home/kst/cvs-smov/downloads/all-quakes.out");
-    public static readonly URL shoreData = new URL("http://smov.org/~kst/shores.txt");
+//  public static readonly string quakeData = "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt";
+    public static readonly string[] quakeData =
+        {
+            "/home/kst/cvs-smov/downloads/all-quakes.out",
+            "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt"
+        };
+    public static readonly string[] shoreData =
+        {
+            "/home/kst/public_html/shores.txt",
+            "http://smov.org/~kst/shores.txt"
+        };
+//  public static readonly string shoreData = "http://smov.org/~kst/shores.txt";
     public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
 //  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
 //  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
     public static readonly int width  = 4096;
     public static readonly int height = width / 2;
-    public static readonly FileName imageFile = new FileName("/home/kst/public_html/quakes.png");
+    public static readonly string imageFile = "/home/kst/public_html/quakes.png";
     public static readonly Color bgColor    = Color.White;
     public static readonly Color axisColor  = Color.Gray;
     public static readonly Color shoreColor = Color.Cyan;
     public static readonly int   bgARGB     = bgColor.ToArgb();
     public static readonly int   axisARGB   = axisColor.ToArgb();
     public static readonly int   shoreARGB  = shoreColor.ToArgb();
-}
-
-abstract class StringWrapper
-{
-    public string s;
-    public StringWrapper()
-    {
-        this.s = null;
-    }
-    public StringWrapper(string s)
-    {
-        this.s = s;
-    }
-    public override string ToString()
-    {
-        return s;
-    }
-    public abstract StreamReader Open();
-}
-
-class FileName: StringWrapper
-{
-    public FileName(string s)
-    {
-        this.s = s;
-    }
-    public override StreamReader Open()
-    {
-        return new StreamReader(s);
-    }
-}
-
-class URL: StringWrapper
-{
-    public URL(string s)
-    {
-        this.s = s;
-    }
-    public override StreamReader Open()
-    {
-        WebRequest request = WebRequest.Create(s);
-        WebResponse response = request.GetResponse();
-        return new StreamReader(response.GetResponseStream(), Encoding.ASCII);
-    }
 }
 
 struct Point
@@ -132,6 +97,50 @@ struct Quake
 
 public class QuakeMap
 {
+    static public StreamReader OpenStream(string s)
+    {
+        if (s.Contains("://"))
+        {
+            try
+            {
+                WebRequest request = WebRequest.Create(s);
+                WebResponse response = request.GetResponse();
+                return new StreamReader(response.GetResponseStream(), Encoding.ASCII);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        else
+        {
+            try
+            {
+                return new StreamReader(s);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    static public StreamReader OpenStream(string[] list)
+    {
+        foreach (string s in list)
+        {
+            StreamReader reader = OpenStream(s);
+            if (s != null) return reader;
+        }
+        Console.WriteLine("Cannot open any of:");
+        foreach (string s in list)
+        {
+            Console.WriteLine("    \"" + s + "\"");
+        }
+        Environment.Exit(1);
+        return null;
+    }
+
     static public Color magToColor(double magnitude)
     {
         // 1.0: green
@@ -188,7 +197,7 @@ public class QuakeMap
     {
         Console.WriteLine("quakemap");
 
-        using (StreamReader reader = Constants.quakeData.Open())
+        using (StreamReader reader = OpenStream(Constants.quakeData))
         {
             string line1 = reader.ReadLine();
             string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
@@ -312,7 +321,7 @@ public class QuakeMap
             }
 
             Console.WriteLine("Setting shores");
-            StreamReader shores = Constants.shoreData.Open();
+            StreamReader shores = OpenStream(Constants.shoreData);
             string shore;
             int shorePoints = 0;
             int shorePixels = 0;
@@ -355,7 +364,7 @@ public class QuakeMap
                 drawQuake(q, bitmap);
             }
             Console.WriteLine("Saving to " + Constants.imageFile);
-            bitmap.Save(Constants.imageFile.s, ImageFormat.Png);
+            bitmap.Save(Constants.imageFile, ImageFormat.Png);
         }
     }
 }
