@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.12 2011/04/07 22:14:03 kst Exp $
+// $Id: quakemap.cs,v 1.13 2011/04/09 20:15:52 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -136,6 +136,17 @@ public class QuakeMap
         return Color.FromArgb(red, green, blue);
     }
 
+    static void drawQuake(Quake q, Bitmap bitmap)
+    {
+        // Scale Lon from (-180..+180) to (0..131)
+        // Scale Lat from (-90..+90) to (0..59)
+        int x = (int)((q.Lon + 180.0) / 360.0 * Constants.width);
+        int y = (int)((q.Lat +  90.0) / 180.0 * Constants.height);
+        y = Constants.height - y;
+        // Console.Write("x = " + x + ", y = " + y + ", mag = " + (int)q.Magnitude);
+        bitmap.SetPixel(x, y, magToColor(q.Magnitude));
+    }
+
     static public void Main()
     {
         Console.WriteLine("quakemap");
@@ -144,10 +155,15 @@ public class QuakeMap
         {
             string line1 = reader.ReadLine();
             string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
-            foreach (string header in headers)
+            for (int i = 0; i < headers.Length; i ++)
             {
-                Console.WriteLine('"' + header + '"');
+                Console.Write(headers[i]);
+                if (i < headers.Length - 1)
+                {
+                    Console.Write('|');
+                }
             }
+            Console.WriteLine();
 
             string pattern = "^";
             for (int i = 0; i <= 9; i ++)
@@ -220,6 +236,7 @@ public class QuakeMap
             double maxMagnitude = Double.MinValue;
             TimeSpan minAge = TimeSpan.MaxValue;
             TimeSpan maxAge = TimeSpan.MinValue;
+            quakes.Reverse(); // plot older quakes first
             foreach (Quake q in quakes)
             {
                 if (q.Lat < minLat) minLat = q.Lat;
@@ -290,13 +307,7 @@ public class QuakeMap
             Console.WriteLine("Iterating over quakes");
             foreach (Quake q in quakes)
             {
-                // Scale Lon from (-180..+180) to (0..131)
-                // Scale Lat from (-90..+90) to (0..59)
-                int x = (int)((q.Lon + 180.0) / 360.0 * Constants.width);
-                int y = (int)((q.Lat +  90.0) / 180.0 * Constants.height);
-                y = Constants.height - y;
-                // Console.Write("x = " + x + ", y = " + y + ", mag = " + (int)q.Magnitude);
-                bitmap.SetPixel(x, y, magToColor(q.Magnitude));
+                drawQuake(q, bitmap);
             }
             Console.WriteLine("Saving to " + Constants.imageFile);
             bitmap.Save(Constants.imageFile.s, ImageFormat.Png);
