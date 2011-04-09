@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.13 2011/04/09 20:15:52 kst Exp $
+// $Id: quakemap.cs,v 1.14 2011/04/09 21:19:14 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -15,13 +15,14 @@ struct Constants
 {
     public static readonly CultureInfo enUS = new CultureInfo("en-US");
     public static readonly DateTime now = DateTime.UtcNow;
-    public static readonly URL quakeData = new URL("http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt");
+    // public static readonly URL quakeData = new URL("http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt");
+    public static readonly FileName quakeData = new FileName("/home/kst/cvs-smov/downloads/all-quakes.out");
     public static readonly URL shoreData = new URL("http://smov.org/~kst/shores.txt");
     public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
 //  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
 //  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
-    public static readonly int width  = 1600;
-    public static readonly int height =  800;
+    public static readonly int width  = 4096;
+    public static readonly int height = width / 2;
     public static readonly FileName imageFile = new FileName("/home/kst/public_html/quakes.png");
     public static readonly Color bgColor    = Color.White;
     public static readonly Color axisColor  = Color.Gray;
@@ -72,6 +73,33 @@ class URL: StringWrapper
         WebRequest request = WebRequest.Create(s);
         WebResponse response = request.GetResponse();
         return new StreamReader(response.GetResponseStream(), Encoding.ASCII);
+    }
+}
+
+struct Point
+{
+    int m_x;
+    int m_y;
+    public int x
+    {
+        get { return m_x; }
+    }
+    public int y
+    {
+        get { return m_y; }
+    }
+    public Point(double lat, double lon)
+    {
+        // Scale lon from (-180..+180) to (0..width-1)
+        // Scale lat from ( -90.. +90) to (0..height-1)
+        m_x = (int)((lon + 180.0) / 360.0 * Constants.width);
+        m_y = (int)((lat +  90.0) / 180.0 * Constants.height);
+        // North at the top
+        m_y = Constants.height - m_y;
+    }
+    public Point(Quake q)
+    {
+        this = new Point(q.Lat, q.Lon);
     }
 }
 
@@ -138,13 +166,22 @@ public class QuakeMap
 
     static void drawQuake(Quake q, Bitmap bitmap)
     {
-        // Scale Lon from (-180..+180) to (0..131)
-        // Scale Lat from (-90..+90) to (0..59)
-        int x = (int)((q.Lon + 180.0) / 360.0 * Constants.width);
-        int y = (int)((q.Lat +  90.0) / 180.0 * Constants.height);
-        y = Constants.height - y;
-        // Console.Write("x = " + x + ", y = " + y + ", mag = " + (int)q.Magnitude);
-        bitmap.SetPixel(x, y, magToColor(q.Magnitude));
+        Point p = new Point(q);
+        // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)q.Magnitude);
+        Color color = magToColor(q.Magnitude);
+        // bitmap.SetPixel(x, y, magToColor(q.Magnitude));
+        int side = (int)q.Magnitude;
+        int xmin = Math.Max(p.x - side / 2, 0);
+        int xmax = Math.Min(p.x + side / 2, Constants.width - 1);
+        int ymin = Math.Max(p.y - side / 2, 0);
+        int ymax = Math.Min(p.y + side / 2, Constants.height - 1);
+        for (int x = xmin; x <= xmax; x ++)
+        {
+            for (int y = ymin; y <= ymax; y ++)
+            {
+                bitmap.SetPixel(x, y, color);
+            }
+        }
     }
 
     static public void Main()
@@ -253,7 +290,17 @@ public class QuakeMap
             Console.WriteLine("Magnitude: " + minMagnitude + " .. " + maxMagnitude);
             Console.WriteLine("Age: " + minAge + " .. " + maxAge);
 
-            Bitmap bitmap = new Bitmap(Constants.width, Constants.height);
+            Bitmap bitmap;
+            try
+            {
+                bitmap = new Bitmap(Constants.width, Constants.height);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception creating bitmap: " + e);
+                bitmap = null;
+                Environment.Exit(1);
+            }
 
             Console.WriteLine("Initializing blank screen");
             for (int y = 0; y < Constants.height; y ++)
@@ -276,13 +323,11 @@ public class QuakeMap
                 double lon = Convert.ToDouble(words[1]);
                 if (lon < -180) lon += 360;
                 if (lon > +180) lon -= 360;
-                int x = (int)((lon + 180.0) / 360.0 * Constants.width);
-                int y = (int)((lat +  90.0) / 180.0 * Constants.height);
-                y = Constants.height - y;
+                Point p = new Point(lat, lon);
                 shorePoints ++;
-                if (bitmap.GetPixel(x, y).ToArgb() != Constants.shoreARGB)
+                if (bitmap.GetPixel(p.x, p.y).ToArgb() != Constants.shoreARGB)
                 {
-                    bitmap.SetPixel(x, y, Constants.shoreColor);
+                    bitmap.SetPixel(p.x, p.y, Constants.shoreColor);
                     shorePixels ++;
                 }
             }
