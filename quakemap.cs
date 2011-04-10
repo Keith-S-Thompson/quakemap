@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.15 2011/04/09 21:37:04 kst Exp $
+// $Id: quakemap.cs,v 1.16 2011/04/10 01:55:33 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -15,24 +15,22 @@ struct Constants
 {
     public static readonly CultureInfo enUS = new CultureInfo("en-US");
     public static readonly DateTime now = DateTime.UtcNow;
-//  public static readonly string quakeData = "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt";
-    public static readonly string[] quakeData =
+    public static /*readonly*/ string[] quakeData =
         {
             "/home/kst/cvs-smov/downloads/all-quakes.out",
             "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt"
         };
-    public static readonly string[] shoreData =
+    public static /*readonly*/ string[] shoreData =
         {
             "/home/kst/public_html/shores.txt",
             "http://smov.org/~kst/shores.txt"
         };
-//  public static readonly string shoreData = "http://smov.org/~kst/shores.txt";
     public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
 //  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
 //  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
-    public static readonly int width  = 4096;
-    public static readonly int height = width / 2;
-    public static readonly string imageFile = "/home/kst/public_html/quakes.png";
+    public static /*readonly*/ int width  = 1024;
+    public static /*readonly*/ int height = width / 2;
+    public static /*readonly*/ string imageFile = "/home/kst/public_html/quakes.png";
     public static readonly Color bgColor    = Color.White;
     public static readonly Color axisColor  = Color.Gray;
     public static readonly Color shoreColor = Color.Cyan;
@@ -130,12 +128,19 @@ public class QuakeMap
         foreach (string s in list)
         {
             StreamReader reader = OpenStream(s);
-            if (s != null) return reader;
+            if (reader != null) return reader;
         }
-        Console.WriteLine("Cannot open any of:");
-        foreach (string s in list)
+        if (list.Length > 1)
         {
-            Console.WriteLine("    \"" + s + "\"");
+            Console.Error.WriteLine("Cannot open any of:");
+            foreach (string s in list)
+            {
+                Console.Error.WriteLine("    \"" + s + "\"");
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine("Cannot open \"" + list[0] + "\"");
         }
         Environment.Exit(1);
         return null;
@@ -193,9 +198,90 @@ public class QuakeMap
         }
     }
 
-    static public void Main()
+    static public void Help(string error = null)
+    {
+        if (error != null) Console.WriteLine(error);
+        Console.WriteLine("Usage: quakemape.exe [options]");
+        Console.WriteLine("    -help            Show this message and exit");
+        Console.WriteLine("    -width num       Width of generated map, default is 1024");
+        Console.WriteLine("    -quakedata name  Filename or URL of quake data file");
+        Console.WriteLine("    -shoredata name  Filename or URL of shore data file");
+        Console.WriteLine("    -imagefile name  Name of generated image file, should be *.png");
+        Environment.Exit(1);
+    }
+
+    enum argFlag { none, width, quakeData, shoreData, imageFile };
+
+    static bool Matches(string arg, string name, int minLen)
+    {
+        return arg.Length >= minLen && name.StartsWith(arg);
+    }
+
+    static public void Main(string[] args)
     {
         Console.WriteLine("quakemap");
+
+        argFlag flag = argFlag.none;
+        foreach (string arg in args)
+        {
+            switch (flag)
+            {
+                case argFlag.none:
+                    if (Matches(arg, "-help", 2))
+                    {
+                        Help();
+                    }
+                    else if (Matches(arg, "-width", 2))
+                    {
+                        flag = argFlag.width;
+                    }
+                    else if (Matches(arg, "-quakedata", 2))
+                    {
+                        flag = argFlag.quakeData;
+                    }
+                    else if (Matches(arg, "-shoredata", 2))
+                    {
+                        flag = argFlag.shoreData;
+                    }
+                    else if (Matches(arg, "-imagefile", 2))
+                    {
+                        flag = argFlag.imageFile;
+                    }
+                    else
+                    {
+                        Help("Unrecognized argument \"" + arg + "\"");
+                    }
+                    break;
+                case argFlag.width:
+                    try
+                    {
+                        Constants.width = Convert.ToInt32(arg);
+                        Constants.height = Constants.width / 2;
+                    }
+                    catch
+                    {
+                        Help("Invalid width argument: \"" + arg + "\"");
+                    }
+                    flag = argFlag.none;
+                    break;
+                case argFlag.quakeData:
+                    Constants.quakeData = new string[] { arg };
+                    flag = argFlag.none;
+                    break;
+                case argFlag.shoreData:
+                    Constants.shoreData = new string[] { arg };
+                    flag = argFlag.none;
+                    break;
+                case argFlag.imageFile:
+                    Constants.imageFile = arg;
+                    flag = argFlag.none;
+                    break;
+            }
+        }
+        if (flag != argFlag.none)
+        {
+            Help("Missing argument");
+        }
 
         using (StreamReader reader = OpenStream(Constants.quakeData))
         {
