@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.16 2011/04/10 01:55:33 kst Exp $
+// $Id: quakemap.cs,v 1.17 2011/04/13 22:00:24 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -28,9 +28,13 @@ struct Constants
     public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
 //  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
 //  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
-    public static /*readonly*/ int width  = 1024;
+    public static /*readonly*/ int width  = 2048;
     public static /*readonly*/ int height = width / 2;
-    public static /*readonly*/ string imageFile = "/home/kst/public_html/quakes.png";
+    public static /*readonly*/ string[] imageFile =
+        {
+            "/home/kst/public_html/quakes.png",
+            @"H:\\public_html\quakes.png"
+        };
     public static readonly Color bgColor    = Color.White;
     public static readonly Color axisColor  = Color.Gray;
     public static readonly Color shoreColor = Color.Cyan;
@@ -144,6 +148,39 @@ public class QuakeMap
         }
         Environment.Exit(1);
         return null;
+    }
+
+    static public void SaveBitmapToPng(Bitmap bitmap, string[] list)
+    {
+        foreach (string filename in list)
+        {
+            try
+            {
+                bitmap.Save(filename, ImageFormat.Png);
+                return;
+            }
+            catch
+            {
+            }
+        }
+        if (list.Length > 1)
+        {
+            Console.Error.WriteLine("Cannot create any of:");
+            foreach (string s in list)
+            {
+                Console.Error.WriteLine("    \"" + s + "\"");
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine("Cannot open \"" + list[0] + "\"");
+        }
+        Environment.Exit(1);
+    }
+
+    static public void SaveBitmapToPng(Bitmap bitmap, string filename )
+    {
+        bitmap.Save(filename, ImageFormat.Png);
     }
 
     static public Color magToColor(double magnitude)
@@ -273,7 +310,7 @@ public class QuakeMap
                     flag = argFlag.none;
                     break;
                 case argFlag.imageFile:
-                    Constants.imageFile = arg;
+                    Constants.imageFile = new string[] { arg };
                     flag = argFlag.none;
                     break;
             }
@@ -450,7 +487,8 @@ public class QuakeMap
                 drawQuake(q, bitmap);
             }
             Console.WriteLine("Saving to " + Constants.imageFile);
-            bitmap.Save(Constants.imageFile, ImageFormat.Png);
+            // bitmap.Save(Constants.imageFile, ImageFormat.Png);
+            SaveBitmapToPng(bitmap, Constants.imageFile);
         }
     }
 }
