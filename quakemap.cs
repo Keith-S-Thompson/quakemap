@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.18 2011/04/13 22:08:06 kst Exp $
+// $Id: quakemap.cs,v 1.19 2011/04/13 22:17:01 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -28,12 +28,12 @@ struct Constants
     public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
 //  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
 //  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
-    public static /*readonly*/ int width  = 2048;
+    public static /*readonly*/ int width  = 5000;
     public static /*readonly*/ int height = width / 2;
     public static /*readonly*/ string[] imageFile =
         {
             "/home/kst/public_html/quakes.png",
-            @"H:\\public_html\quakes.png"
+            @"H:\public_html\quakes.png"
         };
     public static readonly Color bgColor    = Color.White;
     public static readonly Color axisColor  = Color.Gray;
