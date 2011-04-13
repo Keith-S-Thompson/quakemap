@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.22 2011/04/13 23:55:00 kst Exp $
+// $Id: quakemap.cs,v 1.23 2011/04/13 23:58:52 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -386,18 +386,16 @@ namespace quakemap
                 Console.WriteLine("pattern = \"" + pattern + "\"");
                 Regex line_re = new Regex(pattern);
 
-                string tmp_line;
-                ArrayList lines  = new ArrayList();
+                string line;
+                int lineCount = 0;
                 ArrayList quakes = new ArrayList();
-                while ((tmp_line = reader.ReadLine()) != null)
+                while ((line = reader.ReadLine()) != null)
                 {
-                    lines.Add(tmp_line);
-                    Match m = line_re.Match(tmp_line);
+                    lineCount ++;
+                    Match m = line_re.Match(line);
                     if (m.Success)
                     {
                         Quake q = new Quake();
-                        // Console.WriteLine("m.Groups[0].Value = \"" + m.Groups[0].Value + "\"");
-                        // Console.WriteLine("m.Groups[1].Value = \"" + m.Groups[1].Value + "\"");
                         q.Src       = m.Groups[1].Value;
                         q.Eqid      = m.Groups[2].Value;
                         q.Version   = m.Groups[3].Value;
@@ -417,18 +415,16 @@ namespace quakemap
                             q.dt = DateTime.MinValue;
                         }
                         q.age = Constants.now.Subtract(q.dt);
-                        // Console.WriteLine("q = " + q);
-                        // Environment.Exit(42);
                         quakes.Add(q);
                     }
                     else
                     {
-                        Console.WriteLine("Line \"" + tmp_line + "\" does not match Regex " + line_re);
+                        Console.WriteLine("Line \"" + line + "\" does not match Regex " + line_re);
                         Environment.Exit(1);
                     }
                 }
 
-                Console.WriteLine("Got " + lines.Count + " lines, " + quakes.Count + " earthquakes");
+                Console.WriteLine("Got " + lineCount + " lines, " + quakes.Count + " earthquakes");
 
                 double minLat = Double.MaxValue;
                 double maxLat = Double.MinValue;
