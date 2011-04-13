@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.17 2011/04/13 22:00:24 kst Exp $
+// $Id: quakemap.cs,v 1.18 2011/04/13 22:08:06 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -157,6 +157,7 @@ public class QuakeMap
             try
             {
                 bitmap.Save(filename, ImageFormat.Png);
+                Console.WriteLine("Saved to " + filename);
                 return;
             }
             catch
@@ -181,6 +182,7 @@ public class QuakeMap
     static public void SaveBitmapToPng(Bitmap bitmap, string filename )
     {
         bitmap.Save(filename, ImageFormat.Png);
+        Console.WriteLine("Saved to " + filename);
     }
 
     static public Color magToColor(double magnitude)
@@ -486,8 +488,6 @@ public class QuakeMap
             {
                 drawQuake(q, bitmap);
             }
-            Console.WriteLine("Saving to " + Constants.imageFile);
-            // bitmap.Save(Constants.imageFile, ImageFormat.Png);
             SaveBitmapToPng(bitmap, Constants.imageFile);
         }
     }
