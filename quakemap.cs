@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.19 2011/04/13 22:17:01 kst Exp $
+// $Id: quakemap.cs,v 1.20 2011/04/13 22:55:15 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -13,28 +13,12 @@ using System.Drawing.Imaging;
 
 struct Constants
 {
+    public static readonly int defaultWidth = 4096;
     public static readonly CultureInfo enUS = new CultureInfo("en-US");
     public static readonly DateTime now = DateTime.UtcNow;
-    public static /*readonly*/ string[] quakeData =
-        {
-            "/home/kst/cvs-smov/downloads/all-quakes.out",
-            "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt"
-        };
-    public static /*readonly*/ string[] shoreData =
-        {
-            "/home/kst/public_html/shores.txt",
-            "http://smov.org/~kst/shores.txt"
-        };
     public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
 //  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
 //  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
-    public static /*readonly*/ int width  = 5000;
-    public static /*readonly*/ int height = width / 2;
-    public static /*readonly*/ string[] imageFile =
-        {
-            "/home/kst/public_html/quakes.png",
-            @"H:\public_html\quakes.png"
-        };
     public static readonly Color bgColor    = Color.White;
     public static readonly Color axisColor  = Color.Gray;
     public static readonly Color shoreColor = Color.Cyan;
@@ -43,27 +27,53 @@ struct Constants
     public static readonly int   shoreARGB  = shoreColor.ToArgb();
 }
 
+struct Options
+{
+    public static int width = Constants.defaultWidth;
+    public static int height { get { return width / 2; } }
+    public static bool mercator = false;
+    public static string[] quakeData =
+        {
+            "/home/kst/cvs-smov/downloads/all-quakes.out",
+            "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt"
+        };
+    public static string[] shoreData =
+        {
+            "/home/kst/public_html/shores.txt",
+            "http://smov.org/~kst/shores.txt"
+        };
+    public static string[] imageFile =
+        {
+            "/home/kst/public_html/quakes.png",
+            @"H:\public_html\quakes.png"
+        };
+}
+
 struct Point
 {
     int m_x;
     int m_y;
-    public int x
-    {
-        get { return m_x; }
-    }
-    public int y
-    {
-        get { return m_y; }
-    }
+
+    public int x { get { return m_x; } }
+    public int y { get { return m_y; } }
+
     public Point(double lat, double lon)
     {
         // Scale lon from (-180..+180) to (0..width-1)
         // Scale lat from ( -90.. +90) to (0..height-1)
-        m_x = (int)((lon + 180.0) / 360.0 * Constants.width);
-        m_y = (int)((lat +  90.0) / 180.0 * Constants.height);
+
+        if (! Options.mercator)
+        {
+            double y = lat / 90.0;
+            lon *= Math.Sqrt(1.0 - y*y);
+        }
+
+        m_x = (int)((lon + 180.0) / 360.0 * Options.width);
+        m_y = (int)((lat +  90.0) / 180.0 * Options.height);
         // North at the top
-        m_y = Constants.height - m_y;
+        m_y = Options.height - m_y;
     }
+
     public Point(Quake q)
     {
         this = new Point(q.Lat, q.Lon);
@@ -225,9 +235,9 @@ public class QuakeMap
         // bitmap.SetPixel(x, y, magToColor(q.Magnitude));
         int side = (int)q.Magnitude;
         int xmin = Math.Max(p.x - side / 2, 0);
-        int xmax = Math.Min(p.x + side / 2, Constants.width - 1);
+        int xmax = Math.Min(p.x + side / 2, Options.width - 1);
         int ymin = Math.Max(p.y - side / 2, 0);
-        int ymax = Math.Min(p.y + side / 2, Constants.height - 1);
+        int ymax = Math.Min(p.y + side / 2, Options.height - 1);
         for (int x = xmin; x <= xmax; x ++)
         {
             for (int y = ymin; y <= ymax; y ++)
@@ -243,6 +253,7 @@ public class QuakeMap
         Console.WriteLine("Usage: quakemape.exe [options]");
         Console.WriteLine("    -help            Show this message and exit");
         Console.WriteLine("    -width num       Width of generated map, default is 1024");
+        Console.WriteLine("    -mercator        Use a Mercator projection");
         Console.WriteLine("    -quakedata name  Filename or URL of quake data file");
         Console.WriteLine("    -shoredata name  Filename or URL of shore data file");
         Console.WriteLine("    -imagefile name  Name of generated image file, should be *.png");
@@ -294,8 +305,7 @@ public class QuakeMap
                 case argFlag.width:
                     try
                     {
-                        Constants.width = Convert.ToInt32(arg);
-                        Constants.height = Constants.width / 2;
+                        Options.width = Convert.ToInt32(arg);
                     }
                     catch
                     {
@@ -304,15 +314,15 @@ public class QuakeMap
                     flag = argFlag.none;
                     break;
                 case argFlag.quakeData:
-                    Constants.quakeData = new string[] { arg };
+                    Options.quakeData = new string[] { arg };
                     flag = argFlag.none;
                     break;
                 case argFlag.shoreData:
-                    Constants.shoreData = new string[] { arg };
+                    Options.shoreData = new string[] { arg };
                     flag = argFlag.none;
                     break;
                 case argFlag.imageFile:
-                    Constants.imageFile = new string[] { arg };
+                    Options.imageFile = new string[] { arg };
                     flag = argFlag.none;
                     break;
             }
@@ -322,7 +332,7 @@ public class QuakeMap
             Help("Missing argument");
         }
 
-        using (StreamReader reader = OpenStream(Constants.quakeData))
+        using (StreamReader reader = OpenStream(Options.quakeData))
         {
             string line1 = reader.ReadLine();
             string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
@@ -427,7 +437,7 @@ public class QuakeMap
             Bitmap bitmap;
             try
             {
-                bitmap = new Bitmap(Constants.width, Constants.height);
+                bitmap = new Bitmap(Options.width, Options.height);
             }
             catch (Exception e)
             {
@@ -437,16 +447,16 @@ public class QuakeMap
             }
 
             Console.WriteLine("Initializing blank screen");
-            for (int y = 0; y < Constants.height; y ++)
+            for (int y = 0; y < Options.height; y ++)
             {
-                for (int x = 0; x < Constants.width; x ++)
+                for (int x = 0; x < Options.width; x ++)
                 {
                     bitmap.SetPixel(x, y, Constants.bgColor);
                 }
             }
 
             Console.WriteLine("Setting shores");
-            StreamReader shores = OpenStream(Constants.shoreData);
+            StreamReader shores = OpenStream(Options.shoreData);
             string shore;
             int shorePoints = 0;
             int shorePixels = 0;
@@ -470,17 +480,17 @@ public class QuakeMap
                               " (" + percentage.ToString("0.##") + "%)");
 
             Console.WriteLine("Setting axes");
-            for (int y = 0; y < Constants.height; y ++)
+            for (int y = 0; y < Options.height; y ++)
             {
-                bitmap.SetPixel(0,                 y, Constants.axisColor);
-                bitmap.SetPixel(Constants.width/2, y, Constants.axisColor);
-                bitmap.SetPixel(Constants.width-1, y, Constants.axisColor);
+                bitmap.SetPixel(0,               y, Constants.axisColor);
+                bitmap.SetPixel(Options.width/2, y, Constants.axisColor);
+                bitmap.SetPixel(Options.width-1, y, Constants.axisColor);
             }
-            for (int x = 0; x < Constants.width; x ++)
+            for (int x = 0; x < Options.width; x ++)
             {
-                bitmap.SetPixel(x, 0,                  Constants.axisColor);
-                bitmap.SetPixel(x, Constants.height/2, Constants.axisColor);
-                bitmap.SetPixel(x, Constants.height-1, Constants.axisColor);
+                bitmap.SetPixel(x, 0,                Constants.axisColor);
+                bitmap.SetPixel(x, Options.height/2, Constants.axisColor);
+                bitmap.SetPixel(x, Options.height-1, Constants.axisColor);
             }
 
             Console.WriteLine("Iterating over quakes");
@@ -488,7 +498,7 @@ public class QuakeMap
             {
                 drawQuake(q, bitmap);
             }
-            SaveBitmapToPng(bitmap, Constants.imageFile);
+            SaveBitmapToPng(bitmap, Options.imageFile);
         }
     }
 }
