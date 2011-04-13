@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.21 2011/04/13 23:07:55 kst Exp $
+// $Id: quakemap.cs,v 1.22 2011/04/13 23:55:00 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -19,8 +19,6 @@ namespace quakemap
         public static readonly CultureInfo enUS = new CultureInfo("en-US");
         public static readonly DateTime now = DateTime.UtcNow;
         public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
-    //  public static readonly TimeSpan oneHour = new TimeSpan(0, 1, 0, 0);
-    //  public static readonly TimeSpan oneDay  = new TimeSpan(1, 0, 0, 0);
         public static readonly Color bgColor    = Color.White;
         public static readonly Color axisColor  = Color.Gray;
         public static readonly Color shoreColor = Color.Cyan;
@@ -96,7 +94,7 @@ namespace quakemap
         public string Region;
 
         public DateTime dt;
-        public TimeSpan age; // in seconds
+        public TimeSpan age;
 
         public override string ToString()
         {
@@ -107,6 +105,58 @@ namespace quakemap
                    ", dt=" + dt.ToString("u", Constants.enUS) +
                    ", age=" + age;
         }
+        
+        public Color color
+        {
+            get
+            {
+                // Age 0               : red
+                // Age 3.5 days        : blue
+                // Age 7 days or older : green
+                // Intermediate values are interpolated
+                int red, green, blue;
+                double ageInDays = age.TotalDays;
+                if (ageInDays > 7.0) ageInDays = 7.0;
+                if (ageInDays < 0.0) ageInDays = 0.0;
+                if (ageInDays <= 3.5)
+                {
+                    double b = ageInDays / 3.5; // 0..1
+                    blue = (int)(b * 256);
+                    if (blue > 255) blue = 255;
+                    red = 255 - blue;
+                    green = 0;
+                }
+                else
+                {
+                    double g = (ageInDays - 3.5) / 3.5; // 0..1
+                    green = (int)(g * 256);
+                    if (green > 255) green = 255;
+                    blue = 255 - green;
+                    red = 0;
+                }
+                return Color.FromArgb(red, green, blue);
+            }
+        }
+
+        public void Plot(Bitmap bitmap)
+        {
+            Point p = new Point(this);
+            // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)Magnitude);
+            Color color = this.color;
+            int side = (int)(Magnitude * 2);
+            int xmin = Math.Max(p.x - side / 2, 0);
+            int xmax = Math.Min(p.x + side / 2, Options.width - 1);
+            int ymin = Math.Max(p.y - side / 2, 0);
+            int ymax = Math.Min(p.y + side / 2, Options.height - 1);
+            for (int x = xmin; x <= xmax; x ++)
+            {
+                for (int y = ymin; y <= ymax; y ++)
+                {
+                    bitmap.SetPixel(x, y, color);
+                }
+            }
+        }
+
     }
 
     public class Program
@@ -197,58 +247,6 @@ namespace quakemap
             Console.WriteLine("Saved to " + filename);
         }
 
-        static public Color magToColor(double magnitude)
-        {
-            // 1.0: green
-            // 5.0: blue
-            // 9.0: red
-            // Intermediate values are interpolated
-            int red, green, blue;
-            if (magnitude <= 1.0)
-            {
-                return Color.Green;
-            }
-            else if (magnitude <= 5.0)
-            {
-                double x = (magnitude - 1.0) / 4.0; // 0.0..1.0
-                blue = (int)(x * 255);
-                green = 255 - blue;
-                red = 0;
-            }
-            else if (magnitude <= 9.0)
-            {
-                double x = (magnitude - 5.0) / 4.0; // 0.0..1.0
-                green = 0;
-                red = (int)(x * 255);
-                blue = 255 - red;
-            }
-            else
-            {
-                return Color.Red;
-            }
-            return Color.FromArgb(red, green, blue);
-        }
-
-        static void drawQuake(Quake q, Bitmap bitmap)
-        {
-            Point p = new Point(q);
-            // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)q.Magnitude);
-            Color color = magToColor(q.Magnitude);
-            // bitmap.SetPixel(x, y, magToColor(q.Magnitude));
-            int side = (int)q.Magnitude;
-            int xmin = Math.Max(p.x - side / 2, 0);
-            int xmax = Math.Min(p.x + side / 2, Options.width - 1);
-            int ymin = Math.Max(p.y - side / 2, 0);
-            int ymax = Math.Min(p.y + side / 2, Options.height - 1);
-            for (int x = xmin; x <= xmax; x ++)
-            {
-                for (int y = ymin; y <= ymax; y ++)
-                {
-                    bitmap.SetPixel(x, y, color);
-                }
-            }
-        }
-
         static public void Help(string error = null)
         {
             if (error != null) Console.WriteLine(error);
@@ -334,6 +332,26 @@ namespace quakemap
                 Help("Missing argument");
             }
 
+            Console.WriteLine("Options:");
+            Console.WriteLine("    width:    " + Options.width);
+            Console.WriteLine("    height:   " + Options.height);
+            Console.WriteLine("    mercator: " + Options.mercator);
+            Console.WriteLine("    quakeData:");
+            foreach (string s in Options.quakeData)
+            {
+                Console.WriteLine("        \"" + s + "\"");
+            }
+            Console.WriteLine("    shoreData:");
+            foreach (string s in Options.shoreData)
+            {
+                Console.WriteLine("        \"" + s + "\"");
+            }
+            Console.WriteLine("    imageFile:");
+            foreach (string s in Options.imageFile)
+            {
+                Console.WriteLine("        \"" + s + "\"");
+            }
+
             using (StreamReader reader = OpenStream(Options.quakeData))
             {
                 string line1 = reader.ReadLine();
@@ -409,6 +427,7 @@ namespace quakemap
                         Environment.Exit(1);
                     }
                 }
+
                 Console.WriteLine("Got " + lines.Count + " lines, " + quakes.Count + " earthquakes");
 
                 double minLat = Double.MaxValue;
@@ -498,7 +517,7 @@ namespace quakemap
                 Console.WriteLine("Iterating over quakes");
                 foreach (Quake q in quakes)
                 {
-                    drawQuake(q, bitmap);
+                    q.Plot(bitmap);
                 }
                 SaveBitmapToPng(bitmap, Options.imageFile);
             }
