@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.25 2011/04/14 00:18:22 kst Exp $
+// $Id: quakemap.cs,v 1.26 2011/04/14 00:21:10 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -25,7 +25,7 @@ namespace quakemap
             DateTimeStyles.AssumeUniversal;
         public static readonly Color bgColor    = Color.White;
         public static readonly Color axisColor  = Color.Gray;
-        public static readonly Color shoreColor = Color.Magenta;
+        public static readonly Color shoreColor = Color.Gray;
         public static readonly int   bgARGB     = bgColor.ToArgb();
         public static readonly int   axisARGB   = axisColor.ToArgb();
         public static readonly int   shoreARGB  = shoreColor.ToArgb();
