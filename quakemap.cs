@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.30 2011/04/14 02:16:28 kst Exp $
+// $Id: quakemap.cs,v 1.31 2011/04/14 02:44:25 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -26,6 +26,7 @@ namespace quakemap
         public static readonly Color bgColor    = Color.White;
         public static readonly Color axisColor  = Color.Gray;
         public static readonly Color shoreColor = Color.Gray;
+        public static readonly Color depthColor = Color.Black;
         public static readonly int   bgARGB     = bgColor.ToArgb();
         public static readonly int   axisARGB   = axisColor.ToArgb();
         public static readonly int   shoreARGB  = shoreColor.ToArgb();
@@ -233,6 +234,19 @@ namespace quakemap
                         bitmap.SetPixel(p.x+x, p.y+y, color);
                     }
                 }
+            }
+            // Plot the depth as a vertical line
+            // Try 1km = 0.05 deg
+            int depthY = (int)(p.y + depth * Options.width / 360.0 * 0.05);
+            if (depthY < 0) depthY = 0;
+            for (int y = p.y; y <= depthY; y ++)
+            {
+                if (p.x < 0 || p.x >= Options.width ||
+                    y < 0 || y > Options.height)
+                {
+                    Console.WriteLine("depth = " + depth + ", p.y = " + p.y + ", depthY = " + depthY);
+                }
+                bitmap.SetPixel(p.x, y, Constants.depthColor);
             }
         }
 
