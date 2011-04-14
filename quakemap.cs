@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.29 2011/04/14 01:47:55 kst Exp $
+// $Id: quakemap.cs,v 1.30 2011/04/14 02:16:28 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -216,16 +216,22 @@ namespace quakemap
             Point p = new Point(this);
             // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)magnitude);
             Color color = this.color;
-            int side = (int)(magnitude * 2);
-            int xmin = Math.Max(p.x - side / 2, 0);
-            int xmax = Math.Min(p.x + side / 2, Options.width - 1);
-            int ymin = Math.Max(p.y - side / 2, 0);
-            int ymax = Math.Min(p.y + side / 2, Options.height - 1);
+            double radius = magnitude * Options.width / 360.0 / 5.0; // ~ 0.2 deg / magnitude
+            int iRadius = (int)radius;
+            int rSquared = (int)(radius*radius);
+            // {x,y}{min,max} are relative to p.{x,y}
+            int xmin = Math.Max(-iRadius, -p.x);
+            int xmax = Math.Min(+iRadius, Options.width-p.x-1);
+            int ymin = Math.Max(-iRadius, -p.y);
+            int ymax = Math.Min(+iRadius, Options.height-p.y-1);
             for (int x = xmin; x <= xmax; x ++)
             {
                 for (int y = ymin; y <= ymax; y ++)
                 {
-                    bitmap.SetPixel(x, y, color);
+                    if (x*x + y*y <= rSquared)
+                    {
+                        bitmap.SetPixel(p.x+x, p.y+y, color);
+                    }
                 }
             }
         }
@@ -353,6 +359,10 @@ namespace quakemap
                         if (Matches(arg, "-help", 2))
                         {
                             Help();
+                        }
+                        else if (Matches(arg, "-mercator", 2))
+                        {
+                            Options.mercator = true;
                         }
                         else if (Matches(arg, "-width", 2))
                         {
