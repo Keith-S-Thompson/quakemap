@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.27 2011/04/14 00:36:24 kst Exp $
+// $Id: quakemap.cs,v 1.28 2011/04/14 01:37:45 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -66,23 +66,49 @@ namespace quakemap
             m_lat = lat; 
         }
 
+        private static Position nullPosition
+        {
+            get { return new Position(Double.MaxValue, Double.MaxValue); }
+        }
+
+        public bool isNull
+        {
+            get { return m_lon == Double.MaxValue && m_lat == Double.MaxValue; }
+        }
+
         public Position OnePixelSouth()
         {
             Position result = this; // ok to copy, it's a struct
-            result.m_lon = m_lon - 0.1;
-            result.m_lat = m_lat;
+            result.m_lon = m_lon;
+            result.m_lat = m_lat - 0.1;
+            if (result.m_lat >= -90.0)
+            {
+                return result;
+            }
+            else
+            {
+                return nullPosition;
+            }
         }
 
         public Position OnePixelEast()
         {
             Position result = this; // ok to copy, it's a struct
-            result.m_lat = m_lat + 0.1;
-            result.m_lon = m_lon;
+            result.m_lon = m_lon + 0.1;
+            result.m_lat = m_lat;
+            if (result.m_lon <= 180.0)
+            {
+                return result;
+            }
+            else
+            {
+                return nullPosition;
+            }
         }
 
         public override string ToString()
         {
-            return "(lon=" + m_lon + ",lat=" + m_lat + ")";
+            return "Position(lon=" + m_lon + ",lat=" + m_lat + ")";
         }
     }
 
@@ -98,6 +124,8 @@ namespace quakemap
         {
             // Scale lon from (-180..+180) to (0..width-1)
             // Scale lat from ( -90.. +90) to (0..height-1)
+            double lon = pos.lon;
+            double lat = pos.lat;
 
             if (! Options.mercator)
             {
@@ -105,48 +133,44 @@ namespace quakemap
                 lon *= Math.Sqrt(1.0 - y1*y1);
             }
 
-            m_x = (int)((pos.lon + 180.0) / 360.0 * Options.width);
-            m_y = (int)((pos.lat +  90.0) / 180.0 * Options.height);
+            m_x = (int)((lon + 180.0) / 360.0 * Options.width);
+            m_y = (int)((lat +  90.0) / 180.0 * Options.height);
             // North at the top
             m_y = Options.height - m_y;
         }
 
         public Point(Quake q)
         {
-            this = new Point(q.position.lat, q.position.lon);
+            this = new Point(q.position);
         }
 
-        Point OnePixelNorth()
+        public override string ToString()
         {
-            Point result = this; // ok to copy, it's a struct
-            result.m_x = m_x;
-            result.m_y = m_y - 1;
+            return "Point((x=" + m_x + ",y=" + m_y + ")";
         }
     }
 
     struct Quake
     {
-        public string Src;
-        public string Eqid;
-        public string Version;
-        public string Datetime;
-        // public double Lat;
-        // public double Lon;
+        public string src;
+        public string eqid;
+        public string version;
+        public string datetime;
         public Position position;
-        public double Magnitude;
-        public double Depth;
-        public int    NST;
-        public string Region;
+        public double magnitude;
+        public double depth;
+        public int    nst;
+        public string region;
 
         public DateTime dt;
         public TimeSpan age;
 
         public override string ToString()
         {
-            return "Src=" + Src + ", Eqid=" + Eqid + ", Version=" + Version + 
-                   ", Datetime=" + Datetime + ", position=" + position +
-                   ", Magnitude=" + Magnitude + ", Depth=" + Depth +
-                   ", NST=" + NST + ", Region=" + Region +
+            return "src=" + src + ", eqid=" + eqid + ", version=" + version + 
+                   ", datetime=" + datetime + ", position=" + position +
+                   ", magnitude=" + magnitude + ", depth=" + depth +
+                   ", nst=" + nst + ", region=" + region +
                    ", dt=" + dt.ToString("u", Constants.enUS) +
                    ", age=" + age;
         }
@@ -186,9 +210,9 @@ namespace quakemap
         public void Plot(Bitmap bitmap)
         {
             Point p = new Point(this);
-            // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)Magnitude);
+            // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)magnitude);
             Color color = this.color;
-            int side = (int)(Magnitude * 2);
+            int side = (int)(magnitude * 2);
             int xmin = Math.Max(p.x - side / 2, 0);
             int xmax = Math.Min(p.x + side / 2, Options.width - 1);
             int ymin = Math.Max(p.y - side / 2, 0);
@@ -441,20 +465,23 @@ namespace quakemap
                     if (m.Success)
                     {
                         Quake q = new Quake();
-                        q.Src       = m.Groups[1].Value;
-                        q.Eqid      = m.Groups[2].Value;
-                        q.Version   = m.Groups[3].Value;
-                        q.Datetime  = m.Groups[4].Value;
+                        q.src       = m.Groups[1].Value;
+                        q.eqid      = m.Groups[2].Value;
+                        q.version   = m.Groups[3].Value;
+                        q.datetime  = m.Groups[4].Value;
                         double lat = Convert.ToDouble(m.Groups[5].Value);
                         double lon = Convert.ToDouble(m.Groups[6].Value);
                         q.position  = new Position(lon, lat);
-                     // q.Lat       = Convert.ToDouble(m.Groups[5].Value);
-                     // q.Lon       = Convert.ToDouble(m.Groups[6].Value);
-                        q.Magnitude = Convert.ToDouble(m.Groups[7].Value);
-                        q.Depth     = Convert.ToDouble(m.Groups[8].Value);
-                        q.NST       = Convert.ToInt32(m.Groups[9].Value);
-                        q.Region    = m.Groups[10].Value;
-                        bool ok = DateTime.TryParseExact(q.Datetime, Constants.dateFormat, Constants.enUS, Constants.dateStyle, out q.dt);
+                        q.magnitude = Convert.ToDouble(m.Groups[7].Value);
+                        q.depth     = Convert.ToDouble(m.Groups[8].Value);
+                        q.nst       = Convert.ToInt32(m.Groups[9].Value);
+                        q.region    = m.Groups[10].Value;
+                        bool ok = DateTime.TryParseExact
+                                      ( q.datetime,
+                                        Constants.dateFormat,
+                                        Constants.enUS,
+                                        Constants.dateStyle,
+                                        out q.dt );
                         if (!ok)
                         {
                             q.dt = DateTime.MinValue;
@@ -482,12 +509,12 @@ namespace quakemap
                 quakes.Reverse(); // plot older quakes first
                 foreach (Quake q in quakes)
                 {
-                    if (q.Position.lat < minLat) minLat = q.Position.lat;
-                    if (q.Position.lat > maxLat) maxLat = q.Position.lat;
-                    if (q.Position.lon < minLon) minLon = q.Position.lon;
-                    if (q.Position.lon > maxLon) maxLon = q.Position.lon;
-                    if (q.Magnitude < minMagnitude) minMagnitude = q.Magnitude;
-                    if (q.Magnitude > maxMagnitude) maxMagnitude = q.Magnitude;
+                    if (q.position.lat < minLat) minLat = q.position.lat;
+                    if (q.position.lat > maxLat) maxLat = q.position.lat;
+                    if (q.position.lon < minLon) minLon = q.position.lon;
+                    if (q.position.lon > maxLon) maxLon = q.position.lon;
+                    if (q.magnitude < minMagnitude) minMagnitude = q.magnitude;
+                    if (q.magnitude > maxMagnitude) maxMagnitude = q.magnitude;
                     if (q.age < minAge) minAge = q.age;
                     if (q.age > maxAge) maxAge = q.age;
                 }
@@ -529,7 +556,7 @@ namespace quakemap
                     double lon = Convert.ToDouble(words[1]);
                     if (lon < -180) lon += 360;
                     if (lon > +180) lon -= 360;
-                    Point p = new Point(lat, lon);
+                    Point p = new Point(new Position(lon, lat));
                     shorePoints ++;
                     if (bitmap.GetPixel(p.x, p.y).ToArgb() != Constants.shoreARGB)
                     {
@@ -541,18 +568,35 @@ namespace quakemap
                 Console.WriteLine("Plotted " + shorePixels + " pixels for " + shorePoints + " points" +
                                   " (" + percentage.ToString("0.##") + "%)");
 
-                Console.WriteLine("Setting axes");
-                for (int y = 0; y < Options.height; y ++)
+                Console.WriteLine("Drawing meridians of longitude");
+                for (int ilon = -180; ilon <= 180; ilon += 15)
                 {
-                    bitmap.SetPixel(0,               y, Constants.axisColor);
-                    bitmap.SetPixel(Options.width/2, y, Constants.axisColor);
-                    bitmap.SetPixel(Options.width-1, y, Constants.axisColor);
+                    for ( Position pos = new Position((double)ilon, 90.0);
+                          ! pos.isNull;
+                          pos = pos.OnePixelSouth())
+                    {
+                        Point p = new Point(pos);
+                        if (p.x < Options.width && p.y < Options.height)
+                        {
+                            // Console.WriteLine("Plot " + p);
+                            bitmap.SetPixel(p.x, p.y, Constants.axisColor);
+                        }
+                    }
                 }
-                for (int x = 0; x < Options.width; x ++)
+
+                Console.WriteLine("Drawing parallels of latitude");
+                for (int ilat = -90; ilat <= 90; ilat += 15)
                 {
-                    bitmap.SetPixel(x, 0,                Constants.axisColor);
-                    bitmap.SetPixel(x, Options.height/2, Constants.axisColor);
-                    bitmap.SetPixel(x, Options.height-1, Constants.axisColor);
+                    for ( Position pos = new Position(-180.0, (double)ilat);
+                          ! pos.isNull;
+                          pos = pos.OnePixelEast())
+                    {
+                        Point p = new Point(pos);
+                        if (p.x < Options.width && p.y < Options.height)
+                        {
+                            bitmap.SetPixel(p.x, p.y, Constants.axisColor);
+                        }
+                    }
                 }
 
                 Console.WriteLine("Iterating over quakes");
@@ -560,6 +604,7 @@ namespace quakemap
                 {
                     q.Plot(bitmap);
                 }
+
                 SaveBitmapToPng(bitmap, Options.imageFile);
             }
         }
