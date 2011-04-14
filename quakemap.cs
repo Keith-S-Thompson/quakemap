@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.23 2011/04/13 23:58:52 kst Exp $
+// $Id: quakemap.cs,v 1.24 2011/04/14 00:08:09 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -19,6 +19,10 @@ namespace quakemap
         public static readonly CultureInfo enUS = new CultureInfo("en-US");
         public static readonly DateTime now = DateTime.UtcNow;
         public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
+        public static readonly DateTimeStyles dateStyle =
+            DateTimeStyles.AllowWhiteSpaces |
+            DateTimeStyles.AdjustToUniversal |
+            DateTimeStyles.AssumeUniversal;
         public static readonly Color bgColor    = Color.White;
         public static readonly Color axisColor  = Color.Gray;
         public static readonly Color shoreColor = Color.Cyan;
@@ -406,10 +410,7 @@ namespace quakemap
                         q.Depth     = Convert.ToDouble(m.Groups[8].Value);
                         q.NST       = Convert.ToInt32(m.Groups[9].Value);
                         q.Region    = m.Groups[10].Value;
-                        DateTimeStyles style = DateTimeStyles.AllowWhiteSpaces |
-                                               DateTimeStyles.AdjustToUniversal |
-                                               DateTimeStyles.AssumeUniversal;
-                        bool ok = DateTime.TryParseExact(q.Datetime, Constants.dateFormat, Constants.enUS, style, out q.dt);
+                        bool ok = DateTime.TryParseExact(q.Datetime, Constants.dateFormat, Constants.enUS, Constants.dateStyle, out q.dt);
                         if (!ok)
                         {
                             q.dt = DateTime.MinValue;
