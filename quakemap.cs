@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.28 2011/04/14 01:37:45 kst Exp $
+// $Id: quakemap.cs,v 1.29 2011/04/14 01:47:55 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -76,11 +76,12 @@ namespace quakemap
             get { return m_lon == Double.MaxValue && m_lat == Double.MaxValue; }
         }
 
-        public Position OnePixelSouth()
+        public Position NextPixelSouth()
         {
             Position result = this; // ok to copy, it's a struct
+            double delta = 180.0 / Options.height;
             result.m_lon = m_lon;
-            result.m_lat = m_lat - 0.1;
+            result.m_lat = m_lat - delta;
             if (result.m_lat >= -90.0)
             {
                 return result;
@@ -91,10 +92,13 @@ namespace quakemap
             }
         }
 
-        public Position OnePixelEast()
+        public Position NextPixelEast()
         {
             Position result = this; // ok to copy, it's a struct
-            result.m_lon = m_lon + 0.1;
+            double delta = 360.0 / Options.width;
+            result.m_lon = m_lon + delta;
+            // NOTE: This plots more pixels than it needs to in the
+            // non-Mercator projection, but that's ok for now.
             result.m_lat = m_lat;
             if (result.m_lon <= 180.0)
             {
@@ -573,7 +577,7 @@ namespace quakemap
                 {
                     for ( Position pos = new Position((double)ilon, 90.0);
                           ! pos.isNull;
-                          pos = pos.OnePixelSouth())
+                          pos = pos.NextPixelSouth())
                     {
                         Point p = new Point(pos);
                         if (p.x < Options.width && p.y < Options.height)
@@ -589,7 +593,7 @@ namespace quakemap
                 {
                     for ( Position pos = new Position(-180.0, (double)ilat);
                           ! pos.isNull;
-                          pos = pos.OnePixelEast())
+                          pos = pos.NextPixelEast())
                     {
                         Point p = new Point(pos);
                         if (p.x < Options.width && p.y < Options.height)
