@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.31 2011/04/14 02:44:25 kst Exp $
+// $Id: quakemap.cs,v 1.32 2011/04/14 03:01:12 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -155,7 +155,7 @@ namespace quakemap
         }
     }
 
-    struct Quake
+    class Quake : IComparable
     {
         public string src;
         public string eqid;
@@ -248,6 +248,12 @@ namespace quakemap
                 }
                 bitmap.SetPixel(p.x, y, Constants.depthColor);
             }
+        }
+
+        public int CompareTo(object obj)
+        {
+            Quake other = obj as Quake;
+            return - this.age.CompareTo(other.age);
         }
 
     }
@@ -534,7 +540,7 @@ namespace quakemap
                 double maxMagnitude = Double.MinValue;
                 TimeSpan minAge = TimeSpan.MaxValue;
                 TimeSpan maxAge = TimeSpan.MinValue;
-                quakes.Reverse(); // plot older quakes first
+                quakes.Sort(); // plot older quakes first
                 foreach (Quake q in quakes)
                 {
                     if (q.position.lat < minLat) minLat = q.position.lat;
