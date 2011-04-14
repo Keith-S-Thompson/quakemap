@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.24 2011/04/14 00:08:09 kst Exp $
+// $Id: quakemap.cs,v 1.25 2011/04/14 00:18:22 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -25,7 +25,7 @@ namespace quakemap
             DateTimeStyles.AssumeUniversal;
         public static readonly Color bgColor    = Color.White;
         public static readonly Color axisColor  = Color.Gray;
-        public static readonly Color shoreColor = Color.Cyan;
+        public static readonly Color shoreColor = Color.Magenta;
         public static readonly int   bgARGB     = bgColor.ToArgb();
         public static readonly int   axisARGB   = axisColor.ToArgb();
         public static readonly int   shoreARGB  = shoreColor.ToArgb();
@@ -68,8 +68,8 @@ namespace quakemap
 
             if (! Options.mercator)
             {
-                double y = lat / 90.0;
-                lon *= Math.Sqrt(1.0 - y*y);
+                double y1 = lat / 90.0;
+                lon *= Math.Sqrt(1.0 - y1*y1);
             }
 
             m_x = (int)((lon + 180.0) / 360.0 * Options.width);
