@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.32 2011/04/14 03:01:12 kst Exp $
+// $Id: quakemap.cs,v 1.33 2011/04/15 15:49:30 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -15,7 +15,7 @@ namespace quakemap
 {
     struct Constants
     {
-        public static readonly int defaultWidth = 4096;
+        public static readonly int defaultHeight = 2048;
         public static readonly CultureInfo enUS = new CultureInfo("en-US");
         public static readonly DateTime now = DateTime.UtcNow;
         public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
@@ -34,8 +34,15 @@ namespace quakemap
 
     struct Options
     {
-        public static int width = Constants.defaultWidth;
-        public static int height { get { return width / 2; } }
+        private static int m_height = Constants.defaultHeight;
+        public static int height {
+            get { return m_height; }
+            set { m_height = value; }
+        }
+        public static int width {
+            get { return m_height * 2; }
+            set { m_height = value / 2; }
+        }
         public static bool mercator = false;
         public static string[] quakeData =
             {
@@ -346,12 +353,15 @@ namespace quakemap
             Console.WriteLine("Saved to " + filename);
         }
 
-        static public void Help(string error = null)
+        static public void Usage(string error = null)
         {
             if (error != null) Console.WriteLine(error);
             Console.WriteLine("Usage: quakemape.exe [options]");
             Console.WriteLine("    -help            Show this message and exit");
-            Console.WriteLine("    -width num       Width of generated map, default is 1024");
+            Console.WriteLine("    -width num       Width of generated map, default is " + Constants.defaultHeight);
+            Console.WriteLine("                     Sets height to width/2");
+            Console.WriteLine("    -height num      Height of generated map, default is " + Constants.defaultHeight * 2);
+            Console.WriteLine("                     Sets width to height*2");
             Console.WriteLine("    -mercator        Use a Mercator projection");
             Console.WriteLine("    -quakedata name  Filename or URL of quake data file");
             Console.WriteLine("    -shoredata name  Filename or URL of shore data file");
@@ -359,7 +369,7 @@ namespace quakemap
             Environment.Exit(1);
         }
 
-        enum argFlag { none, width, quakeData, shoreData, imageFile };
+        enum argFlag { none, width, height, quakeData, shoreData, imageFile };
 
         static bool Matches(string arg, string name, int minLen)
         {
@@ -368,7 +378,7 @@ namespace quakemap
 
         static public void Main(string[] args)
         {
-            Console.WriteLine("quakemap");
+            Console.WriteLine("quakemap running in " + Environment.CurrentDirectory);
 
             argFlag flag = argFlag.none;
             foreach (string arg in args)
@@ -378,7 +388,7 @@ namespace quakemap
                     case argFlag.none:
                         if (Matches(arg, "-help", 2))
                         {
-                            Help();
+                            Usage();
                         }
                         else if (Matches(arg, "-mercator", 2))
                         {
@@ -387,6 +397,10 @@ namespace quakemap
                         else if (Matches(arg, "-width", 2))
                         {
                             flag = argFlag.width;
+                        }
+                        else if (Matches(arg, "-height", 2))
+                        {
+                            flag = argFlag.height;
                         }
                         else if (Matches(arg, "-quakedata", 2))
                         {
@@ -402,7 +416,7 @@ namespace quakemap
                         }
                         else
                         {
-                            Help("Unrecognized argument \"" + arg + "\"");
+                            Usage("Unrecognized argument \"" + arg + "\"");
                         }
                         break;
                     case argFlag.width:
@@ -412,7 +426,18 @@ namespace quakemap
                         }
                         catch
                         {
-                            Help("Invalid width argument: \"" + arg + "\"");
+                            Usage("Invalid width argument: \"" + arg + "\"");
+                        }
+                        flag = argFlag.none;
+                        break;
+                    case argFlag.height:
+                        try
+                        {
+                            Options.height = Convert.ToInt32(arg);
+                        }
+                        catch
+                        {
+                            Usage("Invalid height argument: \"" + arg + "\"");
                         }
                         flag = argFlag.none;
                         break;
@@ -432,7 +457,7 @@ namespace quakemap
             }
             if (flag != argFlag.none)
             {
-                Help("Missing argument");
+                Usage("Missing argument");
             }
 
             Console.WriteLine("Options:");
