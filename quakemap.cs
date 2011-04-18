@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.33 2011/04/15 15:49:30 kst Exp $
+// $Id: quakemap.cs,v 1.34 2011/04/18 20:07:13 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -52,6 +52,7 @@ namespace quakemap
         public static string[] shoreData =
             {
                 "/home/kst/public_html/shores.txt",
+                @"C:\cygwin\home\keithomp\git\local\quakemap\shores.txt",
                 "http://smov.org/~kst/shores.txt"
             };
         public static string[] imageFile =
