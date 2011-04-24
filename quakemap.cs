@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.34 2011/04/18 20:07:13 kst Exp $
+// $Id: quakemap.cs,v 1.35 2011/04/24 03:24:36 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -387,7 +387,7 @@ namespace quakemap
                 switch (flag)
                 {
                     case argFlag.none:
-                        if (Matches(arg, "-help", 2))
+                        if (Matches(arg, "-help", 4))
                         {
                             Usage();
                         }
@@ -399,7 +399,7 @@ namespace quakemap
                         {
                             flag = argFlag.width;
                         }
-                        else if (Matches(arg, "-height", 2))
+                        else if (Matches(arg, "-height", 4))
                         {
                             flag = argFlag.height;
                         }
