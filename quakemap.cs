@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.35 2011/04/24 03:24:36 kst Exp $
+// $Id: quakemap.cs,v 1.36 2011/05/02 00:49:55 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -11,11 +11,10 @@ using System.Globalization;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace quakemap
+namespace Quakemap
 {
     struct Constants
     {
-        public static readonly int defaultHeight = 2048;
         public static readonly CultureInfo enUS = new CultureInfo("en-US");
         public static readonly DateTime now = DateTime.UtcNow;
         public static readonly string dateFormat = @"dddd, MMMM d, yyyy HH:mm:ss \U\T\C";
@@ -30,37 +29,215 @@ namespace quakemap
         public static readonly int   bgARGB     = bgColor.ToArgb();
         public static readonly int   axisARGB   = axisColor.ToArgb();
         public static readonly int   shoreARGB  = shoreColor.ToArgb();
-    }
+    } // struct Constants
 
-    struct Options
+    public class Options
     {
-        private static int m_height = Constants.defaultHeight;
-        public static int height {
-            get { return m_height; }
+        private struct Default
+        {
+            public static readonly int Height = 2048;
+            public static readonly bool Mercator = false;
+            public static readonly ArrayList QuakeData = new ArrayList(new string[]
+                {
+                    "/home/kst/cvs-smov/downloads/eqs7day-M1.txt",
+                    "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt"
+                });
+            public static readonly ArrayList ShoreData = new ArrayList(new string[]
+                {
+                    "/home/kst/public_html/shores.txt",
+                    @"C:\cygwin\home\keithomp\git\local\quakemap\shores.txt",
+                    "http://smov.org/~kst/shores.txt"
+                });
+            public static readonly ArrayList ImageFile = new ArrayList(new string[]
+                {
+                    "/home/kst/public_html/quakes.png",
+                    @"H:\public_html\quakes.png"
+                });
+        }
+
+        private int? m_height = null;
+        public int height
+        {
+            get { return m_height == null ? Default.Height : (int)m_height; }
             set { m_height = value; }
         }
-        public static int width {
-            get { return m_height * 2; }
+        public int width {
+            get { return 2 * height; }
             set { m_height = value / 2; }
         }
-        public static bool mercator = false;
-        public static string[] quakeData =
+        public bool? m_mercator = null;
+        public bool mercator
+        {
+            get { return m_mercator == null ? Default.Mercator : (bool)m_mercator; }
+            set { m_mercator = value; }
+        }
+
+        private ArrayList m_quakeData = null;
+        public ArrayList quakeData
+        {
+            get { return m_quakeData == null ? Default.QuakeData : m_quakeData; }
+        }
+        public void AddQuakeData(string s)
+        {
+            if (m_quakeData == null)
             {
-                "/home/kst/cvs-smov/downloads/all-quakes.out",
-                "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt"
-            };
-        public static string[] shoreData =
+                m_quakeData = new ArrayList();
+            }
+            m_quakeData.Add(s);
+        }
+
+        private ArrayList m_shoreData = null;
+        public ArrayList shoreData
+        {
+            get { return m_shoreData == null ? Default.ShoreData : m_shoreData; }
+        }
+        private void AddShoreData(string s)
+        {
+            if (m_shoreData == null)
             {
-                "/home/kst/public_html/shores.txt",
-                @"C:\cygwin\home\keithomp\git\local\quakemap\shores.txt",
-                "http://smov.org/~kst/shores.txt"
-            };
-        public static string[] imageFile =
+                m_shoreData = new ArrayList();
+            }
+            m_shoreData.Add(s);
+        }
+
+        private ArrayList m_imageFile = null;
+        public ArrayList imageFile
+        {
+            get { return m_imageFile == null ? Default.ImageFile : m_imageFile; }
+        }
+        public void AddImageFile(string s)
+        {
+            if (m_imageFile == null)
             {
-                "/home/kst/public_html/quakes.png",
-                @"H:\public_html\quakes.png"
-            };
-    }
+                m_imageFile = new ArrayList();
+            }
+            m_imageFile.Add(s);
+        }
+
+        enum argFlag { none, width, height, quakeData, shoreData, imageFile };
+
+        public Options(string[] args)
+        {
+            argFlag flag = argFlag.none;
+            foreach (string arg in args)
+            {
+                switch (flag)
+                {
+                    case argFlag.none:
+                        if (Matches(arg, "-help", 4))
+                        {
+                            Usage();
+                        }
+                        else if (Matches(arg, "-mercator", 2))
+                        {
+                            mercator = true;
+                        }
+                        else if (Matches(arg, "-width", 2))
+                        {
+                            flag = argFlag.width;
+                        }
+                        else if (Matches(arg, "-height", 4))
+                        {
+                            flag = argFlag.height;
+                        }
+                        else if (Matches(arg, "-quakedata", 2))
+                        {
+                            flag = argFlag.quakeData;
+                        }
+                        else if (Matches(arg, "-shoredata", 2))
+                        {
+                            flag = argFlag.shoreData;
+                        }
+                        else if (Matches(arg, "-imagefile", 2))
+                        {
+                            flag = argFlag.imageFile;
+                        }
+                        else
+                        {
+                            Usage("Unrecognized argument \"" + arg + "\"");
+                        }
+                        break;
+                    case argFlag.width:
+                        try
+                        {
+                            width = Convert.ToInt32(arg);
+                        }
+                        catch
+                        {
+                            Usage("Invalid width argument: \"" + arg + "\"");
+                        }
+                        flag = argFlag.none;
+                        break;
+                    case argFlag.height:
+                        try
+                        {
+                            height = Convert.ToInt32(arg);
+                        }
+                        catch
+                        {
+                            Usage("Invalid height argument: \"" + arg + "\"");
+                        }
+                        flag = argFlag.none;
+                        break;
+                    case argFlag.quakeData:
+                        AddQuakeData(arg);
+                        flag = argFlag.none;
+                        break;
+                    case argFlag.shoreData:
+                        AddShoreData(arg);
+                        flag = argFlag.none;
+                        break;
+                    case argFlag.imageFile:
+                        AddImageFile(arg);
+                        flag = argFlag.none;
+                        break;
+                }
+            }
+            if (flag != argFlag.none)
+            {
+                Usage("Missing argument");
+            }
+            
+        } // Options constructor
+
+        static public void Usage(string error = null)
+        {
+            if (error != null) Console.WriteLine(error);
+            Console.WriteLine("Usage: quakemape.exe [options]");
+            Console.WriteLine("    -help            Show this message and exit");
+            Console.WriteLine("    -width num       Width of generated map, default is " + Default.Height);
+            Console.WriteLine("                     Sets height to width/2");
+            Console.WriteLine("    -height num      Height of generated map, default is " + Default.Height * 2);
+            Console.WriteLine("                     Sets width to height*2");
+            Console.WriteLine("    -mercator        Use a Mercator projection");
+            Console.WriteLine("    -quakedata name  Filename or URL of quake data file");
+            Console.WriteLine("                     May be repeated; first available name is used");
+            Console.WriteLine("                     Default list is:");
+            foreach (string s in Default.QuakeData)
+            {
+                Console.WriteLine("        " + s);
+            }
+            Console.WriteLine("    -shoredata name  Filename or URL of shore data file");
+            Console.WriteLine("                     Default list is:");
+            foreach (string s in Default.ShoreData)
+            {
+                Console.WriteLine("        " + s);
+            }
+            Console.WriteLine("    -imagefile name  Name of generated image file, should be *.png");
+            Console.WriteLine("                     Default list is:");
+            foreach (string s in Default.ImageFile)
+            {
+                Console.WriteLine("        " + s);
+            }
+            Environment.Exit(1);
+        } // Usage
+
+
+        static bool Matches(string arg, string name, int minLen)
+        {
+            return arg.Length >= minLen && name.StartsWith(arg);
+        } // Matches
+    } // class Options
 
     struct Position
     {
@@ -88,7 +265,7 @@ namespace quakemap
         public Position NextPixelSouth()
         {
             Position result = this; // ok to copy, it's a struct
-            double delta = 180.0 / Options.height;
+            double delta = 180.0 / Program.options.height;
             result.m_lon = m_lon;
             result.m_lat = m_lat - delta;
             if (result.m_lat >= -90.0)
@@ -104,7 +281,7 @@ namespace quakemap
         public Position NextPixelEast()
         {
             Position result = this; // ok to copy, it's a struct
-            double delta = 360.0 / Options.width;
+            double delta = 360.0 / Program.options.width;
             result.m_lon = m_lon + delta;
             // NOTE: This plots more pixels than it needs to in the
             // non-Mercator projection, but that's ok for now.
@@ -140,16 +317,16 @@ namespace quakemap
             double lon = pos.lon;
             double lat = pos.lat;
 
-            if (! Options.mercator)
+            if (! Program.options.mercator)
             {
                 double y1 = lat / 90.0;
                 lon *= Math.Sqrt(1.0 - y1*y1);
             }
 
-            m_x = (int)((lon + 180.0) / 360.0 * Options.width);
-            m_y = (int)((lat +  90.0) / 180.0 * Options.height);
+            m_x = (int)((lon + 180.0) / 360.0 * Program.options.width);
+            m_y = (int)((lat +  90.0) / 180.0 * Program.options.height);
             // North at the top
-            m_y = Options.height - m_y;
+            m_y = Program.options.height - m_y;
         }
 
         public Point(Quake q)
@@ -225,14 +402,14 @@ namespace quakemap
             Point p = new Point(this);
             // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)magnitude);
             Color color = this.color;
-            double radius = magnitude * Options.width / 360.0 / 5.0; // ~ 0.2 deg / magnitude
+            double radius = magnitude * Program.options.width / 360.0 / 5.0; // ~ 0.2 deg / magnitude
             int iRadius = (int)radius;
             int rSquared = (int)(radius*radius);
             // {x,y}{min,max} are relative to p.{x,y}
             int xmin = Math.Max(-iRadius, -p.x);
-            int xmax = Math.Min(+iRadius, Options.width-p.x-1);
+            int xmax = Math.Min(+iRadius, Program.options.width-p.x-1);
             int ymin = Math.Max(-iRadius, -p.y);
-            int ymax = Math.Min(+iRadius, Options.height-p.y-1);
+            int ymax = Math.Min(+iRadius, Program.options.height-p.y-1);
             for (int x = xmin; x <= xmax; x ++)
             {
                 for (int y = ymin; y <= ymax; y ++)
@@ -245,12 +422,12 @@ namespace quakemap
             }
             // Plot the depth as a vertical line
             // Try 1km = 0.05 deg
-            int depthY = (int)(p.y + depth * Options.width / 360.0 * 0.05);
+            int depthY = (int)(p.y + depth * Program.options.width / 360.0 * 0.05);
             if (depthY < 0) depthY = 0;
             for (int y = p.y; y <= depthY; y ++)
             {
-                if (p.x < 0 || p.x >= Options.width ||
-                    y < 0 || y > Options.height)
+                if (p.x < 0 || p.x >= Program.options.width ||
+                    y < 0 || y > Program.options.height)
                 {
                     Console.WriteLine("depth = " + depth + ", p.y = " + p.y + ", depthY = " + depthY);
                 }
@@ -264,10 +441,13 @@ namespace quakemap
             return - this.age.CompareTo(other.age);
         }
 
-    }
+    } // class Quake
+
 
     public class Program
     {
+        public static Options options;
+
         static public StreamReader OpenStream(string s)
         {
             if (s.Contains("://"))
@@ -296,14 +476,14 @@ namespace quakemap
             }
         }
 
-        static public StreamReader OpenStream(string[] list)
+        static public StreamReader OpenStream(ArrayList list)
         {
             foreach (string s in list)
             {
                 StreamReader reader = OpenStream(s);
                 if (reader != null) return reader;
             }
-            if (list.Length > 1)
+            if (list.Count > 1)
             {
                 Console.Error.WriteLine("Cannot open any of:");
                 foreach (string s in list)
@@ -319,7 +499,7 @@ namespace quakemap
             return null;
         }
 
-        static public void SaveBitmapToPng(Bitmap bitmap, string[] list)
+        static public void SaveBitmapToPng(Bitmap bitmap, ArrayList list)
         {
             foreach (string filename in list)
             {
@@ -333,7 +513,7 @@ namespace quakemap
                 {
                 }
             }
-            if (list.Length > 1)
+            if (list.Count > 1)
             {
                 Console.Error.WriteLine("Cannot create any of:");
                 foreach (string s in list)
@@ -354,134 +534,33 @@ namespace quakemap
             Console.WriteLine("Saved to " + filename);
         }
 
-        static public void Usage(string error = null)
-        {
-            if (error != null) Console.WriteLine(error);
-            Console.WriteLine("Usage: quakemape.exe [options]");
-            Console.WriteLine("    -help            Show this message and exit");
-            Console.WriteLine("    -width num       Width of generated map, default is " + Constants.defaultHeight);
-            Console.WriteLine("                     Sets height to width/2");
-            Console.WriteLine("    -height num      Height of generated map, default is " + Constants.defaultHeight * 2);
-            Console.WriteLine("                     Sets width to height*2");
-            Console.WriteLine("    -mercator        Use a Mercator projection");
-            Console.WriteLine("    -quakedata name  Filename or URL of quake data file");
-            Console.WriteLine("    -shoredata name  Filename or URL of shore data file");
-            Console.WriteLine("    -imagefile name  Name of generated image file, should be *.png");
-            Environment.Exit(1);
-        }
-
-        enum argFlag { none, width, height, quakeData, shoreData, imageFile };
-
-        static bool Matches(string arg, string name, int minLen)
-        {
-            return arg.Length >= minLen && name.StartsWith(arg);
-        }
-
         static public void Main(string[] args)
         {
             Console.WriteLine("quakemap running in " + Environment.CurrentDirectory);
 
-            argFlag flag = argFlag.none;
-            foreach (string arg in args)
-            {
-                switch (flag)
-                {
-                    case argFlag.none:
-                        if (Matches(arg, "-help", 4))
-                        {
-                            Usage();
-                        }
-                        else if (Matches(arg, "-mercator", 2))
-                        {
-                            Options.mercator = true;
-                        }
-                        else if (Matches(arg, "-width", 2))
-                        {
-                            flag = argFlag.width;
-                        }
-                        else if (Matches(arg, "-height", 4))
-                        {
-                            flag = argFlag.height;
-                        }
-                        else if (Matches(arg, "-quakedata", 2))
-                        {
-                            flag = argFlag.quakeData;
-                        }
-                        else if (Matches(arg, "-shoredata", 2))
-                        {
-                            flag = argFlag.shoreData;
-                        }
-                        else if (Matches(arg, "-imagefile", 2))
-                        {
-                            flag = argFlag.imageFile;
-                        }
-                        else
-                        {
-                            Usage("Unrecognized argument \"" + arg + "\"");
-                        }
-                        break;
-                    case argFlag.width:
-                        try
-                        {
-                            Options.width = Convert.ToInt32(arg);
-                        }
-                        catch
-                        {
-                            Usage("Invalid width argument: \"" + arg + "\"");
-                        }
-                        flag = argFlag.none;
-                        break;
-                    case argFlag.height:
-                        try
-                        {
-                            Options.height = Convert.ToInt32(arg);
-                        }
-                        catch
-                        {
-                            Usage("Invalid height argument: \"" + arg + "\"");
-                        }
-                        flag = argFlag.none;
-                        break;
-                    case argFlag.quakeData:
-                        Options.quakeData = new string[] { arg };
-                        flag = argFlag.none;
-                        break;
-                    case argFlag.shoreData:
-                        Options.shoreData = new string[] { arg };
-                        flag = argFlag.none;
-                        break;
-                    case argFlag.imageFile:
-                        Options.imageFile = new string[] { arg };
-                        flag = argFlag.none;
-                        break;
-                }
-            }
-            if (flag != argFlag.none)
-            {
-                Usage("Missing argument");
-            }
+            options = new Options(args);
 
             Console.WriteLine("Options:");
-            Console.WriteLine("    width:    " + Options.width);
-            Console.WriteLine("    height:   " + Options.height);
-            Console.WriteLine("    mercator: " + Options.mercator);
+            Console.WriteLine("    width:    " + options.width);
+            Console.WriteLine("    height:   " + options.height);
+            Console.WriteLine("    mercator: " + options.mercator);
             Console.WriteLine("    quakeData:");
-            foreach (string s in Options.quakeData)
+            foreach (string s in options.quakeData)
             {
                 Console.WriteLine("        \"" + s + "\"");
             }
             Console.WriteLine("    shoreData:");
-            foreach (string s in Options.shoreData)
+            foreach (string s in options.shoreData)
             {
                 Console.WriteLine("        \"" + s + "\"");
             }
             Console.WriteLine("    imageFile:");
-            foreach (string s in Options.imageFile)
+            foreach (string s in options.imageFile)
             {
                 Console.WriteLine("        \"" + s + "\"");
             }
 
-            using (StreamReader reader = OpenStream(Options.quakeData))
+            using (StreamReader reader = OpenStream(options.quakeData))
             {
                 string line1 = reader.ReadLine();
                 string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
@@ -586,7 +665,7 @@ namespace quakemap
                 Bitmap bitmap;
                 try
                 {
-                    bitmap = new Bitmap(Options.width, Options.height);
+                    bitmap = new Bitmap(options.width, options.height);
                 }
                 catch (Exception e)
                 {
@@ -596,16 +675,16 @@ namespace quakemap
                 }
 
                 Console.WriteLine("Initializing blank screen");
-                for (int y = 0; y < Options.height; y ++)
+                for (int y = 0; y < options.height; y ++)
                 {
-                    for (int x = 0; x < Options.width; x ++)
+                    for (int x = 0; x < options.width; x ++)
                     {
                         bitmap.SetPixel(x, y, Constants.bgColor);
                     }
                 }
 
                 Console.WriteLine("Setting shores");
-                StreamReader shores = OpenStream(Options.shoreData);
+                StreamReader shores = OpenStream(options.shoreData);
                 string shore;
                 int shorePoints = 0;
                 int shorePixels = 0;
@@ -636,7 +715,7 @@ namespace quakemap
                           pos = pos.NextPixelSouth())
                     {
                         Point p = new Point(pos);
-                        if (p.x < Options.width && p.y < Options.height)
+                        if (p.x < options.width && p.y < options.height)
                         {
                             // Console.WriteLine("Plot " + p);
                             bitmap.SetPixel(p.x, p.y, Constants.axisColor);
@@ -652,7 +731,7 @@ namespace quakemap
                           pos = pos.NextPixelEast())
                     {
                         Point p = new Point(pos);
-                        if (p.x < Options.width && p.y < Options.height)
+                        if (p.x < options.width && p.y < options.height)
                         {
                             bitmap.SetPixel(p.x, p.y, Constants.axisColor);
                         }
@@ -665,8 +744,8 @@ namespace quakemap
                     q.Plot(bitmap);
                 }
 
-                SaveBitmapToPng(bitmap, Options.imageFile);
+                SaveBitmapToPng(bitmap, options.imageFile);
             }
-        }
-    }
-}
+        } // Main
+    } // class Program
+} // namespace Quakemap
