@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.37 2011/05/02 00:58:57 kst Exp $
+// $Id: quakemap.cs,v 1.38 2011/05/02 01:44:54 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -563,16 +563,23 @@ namespace Quakemap
             using (StreamReader reader = OpenStream(options.quakeData))
             {
                 string line1 = reader.ReadLine();
-                string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
-                for (int i = 0; i < headers.Length; i ++)
+                if (line1 == null)
                 {
-                    Console.Write(headers[i]);
-                    if (i < headers.Length - 1)
-                    {
-                        Console.Write('|');
-                    }
+                    Console.WriteLine("No line 1");
                 }
-                Console.WriteLine();
+                else
+                {
+                    string[] headers = line1.Split(new char[] {','}, StringSplitOptions.None);
+                    for (int i = 0; i < headers.Length; i ++)
+                    {
+                        Console.Write(headers[i]);
+                        if (i < headers.Length - 1)
+                        {
+                            Console.Write('|');
+                        }
+                    }
+                    Console.WriteLine();
+                }
 
                 string pattern = "^";
                 for (int i = 0; i <= 9; i ++)
