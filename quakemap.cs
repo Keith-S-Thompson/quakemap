@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.36 2011/05/02 00:49:55 kst Exp $
+// $Id: quakemap.cs,v 1.37 2011/05/02 00:58:57 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -690,17 +690,24 @@ namespace Quakemap
                 int shorePixels = 0;
                 while ((shore = shores.ReadLine()) != null)
                 {
-                    string[] words = shore.Split(new Char[] {' '});
-                    double lat = Convert.ToDouble(words[0]);
-                    double lon = Convert.ToDouble(words[1]);
-                    if (lon < -180) lon += 360;
-                    if (lon > +180) lon -= 360;
-                    Point p = new Point(new Position(lon, lat));
-                    shorePoints ++;
-                    if (bitmap.GetPixel(p.x, p.y).ToArgb() != Constants.shoreARGB)
+                    try
                     {
-                        bitmap.SetPixel(p.x, p.y, Constants.shoreColor);
-                        shorePixels ++;
+                        string[] words = shore.Split(new Char[] {' '});
+                        double lat = Convert.ToDouble(words[0]);
+                        double lon = Convert.ToDouble(words[1]);
+                        if (lon < -180) lon += 360;
+                        if (lon > +180) lon -= 360;
+                        Point p = new Point(new Position(lon, lat));
+                        shorePoints ++;
+                        if (bitmap.GetPixel(p.x, p.y).ToArgb() != Constants.shoreARGB)
+                        {
+                            bitmap.SetPixel(p.x, p.y, Constants.shoreColor);
+                            shorePixels ++;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore input errors
                     }
                 }
                 double percentage = (double)shorePixels / (double)shorePoints * 100.0;
