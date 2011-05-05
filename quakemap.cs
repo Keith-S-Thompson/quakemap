@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.38 2011/05/02 01:44:54 kst Exp $
+// $Id: quakemap.cs,v 1.39 2011/05/05 18:19:55 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -37,6 +37,7 @@ namespace Quakemap
         {
             public static readonly int Height = 2048;
             public static readonly bool Mercator = false;
+            public static readonly bool Fade = false;
             public static readonly ArrayList QuakeData = new ArrayList(new string[]
                 {
                     "/home/kst/cvs-smov/downloads/eqs7day-M1.txt",
@@ -65,11 +66,19 @@ namespace Quakemap
             get { return 2 * height; }
             set { m_height = value / 2; }
         }
+
         public bool? m_mercator = null;
         public bool mercator
         {
             get { return m_mercator == null ? Default.Mercator : (bool)m_mercator; }
             set { m_mercator = value; }
+        }
+
+        public bool? m_fade = null;
+        public bool fade
+        {
+            get { return m_fade == null ? Default.Fade : (bool)m_fade; }
+            set { m_fade = value; }
         }
 
         private ArrayList m_quakeData = null;
@@ -131,6 +140,10 @@ namespace Quakemap
                         else if (Matches(arg, "-mercator", 2))
                         {
                             mercator = true;
+                        }
+                        else if (Matches(arg, "-fade", 2))
+                        {
+                            fade = true;
                         }
                         else if (Matches(arg, "-width", 2))
                         {
@@ -210,6 +223,7 @@ namespace Quakemap
             Console.WriteLine("    -height num      Height of generated map, default is " + Default.Height * 2);
             Console.WriteLine("                     Sets width to height*2");
             Console.WriteLine("    -mercator        Use a Mercator projection");
+            Console.WriteLine("    -fade            Older earthquakes fade to white");
             Console.WriteLine("    -quakedata name  Filename or URL of quake data file");
             Console.WriteLine("                     May be repeated; first available name is used");
             Console.WriteLine("                     Default list is:");
@@ -393,9 +407,16 @@ namespace Quakemap
                     blue = 255 - green;
                     red = 0;
                 }
+                if (Program.options.fade)
+                {
+                    double fadeFactor = ageInDays / 7.0;
+                    red   = (int)(255 * fadeFactor) + (int)(red   * (1.0 - fadeFactor));
+                    green = (int)(255 * fadeFactor) + (int)(green * (1.0 - fadeFactor));
+                    blue  = (int)(255 * fadeFactor) + (int)(blue  * (1.0 - fadeFactor));
+                }
                 return Color.FromArgb(red, green, blue);
             }
-        }
+        } // Color
 
         public void Plot(Bitmap bitmap)
         {
@@ -405,7 +426,7 @@ namespace Quakemap
             double radius = magnitude * Program.options.width / 360.0 / 5.0; // ~ 0.2 deg / magnitude
             int iRadius = (int)radius;
             int rSquared = (int)(radius*radius);
-            // {x,y}{min,max} are relative to p.{x,y}
+            // xmin, xmax, ymin, ymax are relative to p.x, p.y
             int xmin = Math.Max(-iRadius, -p.x);
             int xmax = Math.Min(+iRadius, Program.options.width-p.x-1);
             int ymin = Math.Max(-iRadius, -p.y);
@@ -433,7 +454,7 @@ namespace Quakemap
                 }
                 bitmap.SetPixel(p.x, y, Constants.depthColor);
             }
-        }
+        } // Plot
 
         public int CompareTo(object obj)
         {
@@ -664,10 +685,13 @@ namespace Quakemap
                     if (q.age < minAge) minAge = q.age;
                     if (q.age > maxAge) maxAge = q.age;
                 }
-                Console.WriteLine("Lat: " + minLat + " .. " + maxLat);
-                Console.WriteLine("Lon: " + minLon + " .. " + maxLon);
-                Console.WriteLine("Magnitude: " + minMagnitude + " .. " + maxMagnitude);
-                Console.WriteLine("Age: " + minAge + " .. " + maxAge);
+                if (quakes.Count > 0)
+                {
+                    Console.WriteLine("Lat: " + minLat + " .. " + maxLat);
+                    Console.WriteLine("Lon: " + minLon + " .. " + maxLon);
+                    Console.WriteLine("Magnitude: " + minMagnitude + " .. " + maxMagnitude);
+                    Console.WriteLine("Age: " + minAge + " .. " + maxAge);
+                }
 
                 Bitmap bitmap;
                 try
