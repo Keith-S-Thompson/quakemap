@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.39 2011/05/05 18:19:55 kst Exp $
+// $Id: quakemap.cs,v 1.40 2011/05/15 02:43:00 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -36,8 +36,10 @@ namespace Quakemap
         private struct Default
         {
             public static readonly int Height = 2048;
+            public static readonly int Rotation = 0;
             public static readonly bool Mercator = false;
             public static readonly bool Fade = false;
+            public static readonly bool Gray = false;
             public static readonly ArrayList QuakeData = new ArrayList(new string[]
                 {
                     "/home/kst/cvs-smov/downloads/eqs7day-M1.txt",
@@ -67,6 +69,13 @@ namespace Quakemap
             set { m_height = value / 2; }
         }
 
+        public int? m_rotation = null;
+        public int rotation
+        {
+            get { return m_rotation == null ? Default.Rotation : (int)m_rotation; }
+            set { m_rotation = value; }
+        }
+
         public bool? m_mercator = null;
         public bool mercator
         {
@@ -79,6 +88,13 @@ namespace Quakemap
         {
             get { return m_fade == null ? Default.Fade : (bool)m_fade; }
             set { m_fade = value; }
+        }
+
+        public bool? m_gray = null;
+        public bool gray
+        {
+            get { return m_gray == null ? Default.Gray : (bool)m_gray; }
+            set { m_gray = value; }
         }
 
         private ArrayList m_quakeData = null;
@@ -123,7 +139,7 @@ namespace Quakemap
             m_imageFile.Add(s);
         }
 
-        enum argFlag { none, width, height, quakeData, shoreData, imageFile };
+        enum argFlag { none, width, height, rotation, quakeData, shoreData, imageFile };
 
         public Options(string[] args)
         {
@@ -145,6 +161,10 @@ namespace Quakemap
                         {
                             fade = true;
                         }
+                        else if (Matches(arg, "-gray", 2))
+                        {
+                            gray = true;
+                        }
                         else if (Matches(arg, "-width", 2))
                         {
                             flag = argFlag.width;
@@ -152,6 +172,10 @@ namespace Quakemap
                         else if (Matches(arg, "-height", 4))
                         {
                             flag = argFlag.height;
+                        }
+                        else if (Matches(arg, "-rotation", 2))
+                        {
+                            flag = argFlag.rotation;
                         }
                         else if (Matches(arg, "-quakedata", 2))
                         {
@@ -192,6 +216,17 @@ namespace Quakemap
                         }
                         flag = argFlag.none;
                         break;
+                    case argFlag.rotation:
+                        try
+                        {
+                            rotation = Convert.ToInt32(arg);
+                        }
+                        catch
+                        {
+                            Usage("Invalid rotation argument: \"" + arg + "\"");
+                        }
+                        flag = argFlag.none;
+                        break;
                     case argFlag.quakeData:
                         AddQuakeData(arg);
                         flag = argFlag.none;
@@ -222,8 +257,10 @@ namespace Quakemap
             Console.WriteLine("                     Sets height to width/2");
             Console.WriteLine("    -height num      Height of generated map, default is " + Default.Height * 2);
             Console.WriteLine("                     Sets width to height*2");
+            Console.WriteLine("    -rotation num    Rotate num degrees");
             Console.WriteLine("    -mercator        Use a Mercator projection");
             Console.WriteLine("    -fade            Older earthquakes fade to white");
+            Console.WriteLine("    -gray            Show quakes in gray (overrides -fade)");
             Console.WriteLine("    -quakedata name  Filename or URL of quake data file");
             Console.WriteLine("                     May be repeated; first available name is used");
             Console.WriteLine("                     Default list is:");
@@ -328,7 +365,9 @@ namespace Quakemap
         {
             // Scale lon from (-180..+180) to (0..width-1)
             // Scale lat from ( -90.. +90) to (0..height-1)
-            double lon = pos.lon;
+            double lon = pos.lon + Program.options.rotation;
+            while (lon >  180.0) lon -= 360.0;
+            while (lon < -180.0) lon += 360.0;
             double lat = pos.lat;
 
             if (! Program.options.mercator)
@@ -391,28 +430,35 @@ namespace Quakemap
                 double ageInDays = age.TotalDays;
                 if (ageInDays > 7.0) ageInDays = 7.0;
                 if (ageInDays < 0.0) ageInDays = 0.0;
-                if (ageInDays <= 3.5)
+                if (Program.options.gray)
                 {
-                    double b = ageInDays / 3.5; // 0..1
-                    blue = (int)(b * 256);
-                    if (blue > 255) blue = 255;
-                    red = 255 - blue;
-                    green = 0;
+                    red = green = blue = (int)(ageInDays / 7.0 * 255);
                 }
                 else
                 {
-                    double g = (ageInDays - 3.5) / 3.5; // 0..1
-                    green = (int)(g * 256);
-                    if (green > 255) green = 255;
-                    blue = 255 - green;
-                    red = 0;
-                }
-                if (Program.options.fade)
-                {
-                    double fadeFactor = ageInDays / 7.0;
-                    red   = (int)(255 * fadeFactor) + (int)(red   * (1.0 - fadeFactor));
-                    green = (int)(255 * fadeFactor) + (int)(green * (1.0 - fadeFactor));
-                    blue  = (int)(255 * fadeFactor) + (int)(blue  * (1.0 - fadeFactor));
+                    if (ageInDays <= 3.5)
+                    {
+                        double b = ageInDays / 3.5; // 0..1
+                        blue = (int)(b * 256);
+                        if (blue > 255) blue = 255;
+                        red = 255 - blue;
+                        green = 0;
+                    }
+                    else
+                    {
+                        double g = (ageInDays - 3.5) / 3.5; // 0..1
+                        green = (int)(g * 256);
+                        if (green > 255) green = 255;
+                        blue = 255 - green;
+                        red = 0;
+                    }
+                    if (Program.options.fade)
+                    {
+                        double fadeFactor = ageInDays / 7.0;
+                        red   = (int)(255 * fadeFactor) + (int)(red   * (1.0 - fadeFactor));
+                        green = (int)(255 * fadeFactor) + (int)(green * (1.0 - fadeFactor));
+                        blue  = (int)(255 * fadeFactor) + (int)(blue  * (1.0 - fadeFactor));
+                    }
                 }
                 return Color.FromArgb(red, green, blue);
             }
