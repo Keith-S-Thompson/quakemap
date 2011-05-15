@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.40 2011/05/15 02:43:00 kst Exp $
+// $Id: quakemap.cs,v 1.41 2011/05/15 02:47:01 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -219,7 +219,7 @@ namespace Quakemap
                     case argFlag.rotation:
                         try
                         {
-                            rotation = Convert.ToInt32(arg);
+                            rotation = Convert.ToInt32(arg) % 360;
                         }
                         catch
                         {
@@ -366,8 +366,7 @@ namespace Quakemap
             // Scale lon from (-180..+180) to (0..width-1)
             // Scale lat from ( -90.. +90) to (0..height-1)
             double lon = pos.lon + Program.options.rotation;
-            while (lon >  180.0) lon -= 360.0;
-            while (lon < -180.0) lon += 360.0;
+            if (lon > 180.0) lon -= 360.0;
             double lat = pos.lat;
 
             if (! Program.options.mercator)
