@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.41 2011/05/15 02:47:01 kst Exp $
+// $Id: quakemap.cs,v 1.42 2011/05/28 19:56:50 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -468,7 +468,13 @@ namespace Quakemap
             Point p = new Point(this);
             // Console.Write("p.x = " + p.x + ", p.y = " + p.y + ", mag = " + (int)magnitude);
             Color color = this.color;
-            double radius = magnitude * Program.options.width / 360.0 / 5.0; // ~ 0.2 deg / magnitude
+            //
+            // Experiment: make diameter proportional to magnitude**2,
+            // keeping magnitude 6.0 the same size as before
+            //
+            double mag2 = magnitude * magnitude / 6.0;
+            // double radius = magnitude * Program.options.width / 360.0 / 5.0; // ~ 0.2 deg / magnitude
+            double radius = mag2 * Program.options.width / 360.0 / 5.0;
             int iRadius = (int)radius;
             int rSquared = (int)(radius*radius);
             // xmin, xmax, ymin, ymax are relative to p.x, p.y
