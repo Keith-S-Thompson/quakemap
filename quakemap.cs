@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.42 2011/05/28 19:56:50 kst Exp $
+// $Id: quakemap.cs,v 1.43 2011/05/29 01:59:58 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -366,7 +366,8 @@ namespace Quakemap
             // Scale lon from (-180..+180) to (0..width-1)
             // Scale lat from ( -90.. +90) to (0..height-1)
             double lon = pos.lon + Program.options.rotation;
-            if (lon > 180.0) lon -= 360.0;
+            while (lon >  180.0) lon -= 360.0;
+            while (lon < -180.0) lon += 360.0;
             double lat = pos.lat;
 
             if (! Program.options.mercator)
