@@ -1,4 +1,4 @@
-// $Id: quakemap.cs,v 1.43 2011/05/29 01:59:58 kst Exp $
+// $Id: quakemap.cs,v 1.44 2011/10/11 20:57:13 kst Exp $
 // $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
 
 using System;
@@ -402,7 +402,7 @@ namespace Quakemap
         public Position position;
         public double magnitude;
         public double depth;
-        public int    nst;
+     // public int    nst;
         public string region;
 
         public DateTime dt;
@@ -413,7 +413,8 @@ namespace Quakemap
             return "src=" + src + ", eqid=" + eqid + ", version=" + version + 
                    ", datetime=" + datetime + ", position=" + position +
                    ", magnitude=" + magnitude + ", depth=" + depth +
-                   ", nst=" + nst + ", region=" + region +
+                // ", nst=" + nst +
+                   ", region=" + region +
                    ", dt=" + dt.ToString("u", Constants.enUS) +
                    ", age=" + age;
         }
@@ -693,7 +694,7 @@ namespace Quakemap
                         q.position  = new Position(lon, lat);
                         q.magnitude = Convert.ToDouble(m.Groups[7].Value);
                         q.depth     = Convert.ToDouble(m.Groups[8].Value);
-                        q.nst       = Convert.ToInt32(m.Groups[9].Value);
+                     // q.nst       = Convert.ToInt32(m.Groups[9].Value);
                         q.region    = m.Groups[10].Value;
                         bool ok = DateTime.TryParseExact
                                       ( q.datetime,
