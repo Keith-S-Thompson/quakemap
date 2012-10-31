@@ -1,6 +1,3 @@
-// $Id: quakemap.cs,v 1.44 2011/10/11 20:57:13 kst Exp $
-// $Source: /home/kst/CVS_smov/csharp/quakemap.cs,v $
-
 using System;
 using System.IO;
 using System.Net;
