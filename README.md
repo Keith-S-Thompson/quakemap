@@ -31,7 +31,7 @@ line represents a point on the Earth's surface).
 
 To compile under Ubuntu, you'll need to install the `mono-gmcs` package:
 
-    apt-get install mono-gmcs
+    sudo apt-get install mono-gmcs
 
 Then run this command:
 
