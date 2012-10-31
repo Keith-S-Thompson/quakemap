@@ -25,7 +25,9 @@ The generated image uses:
 * The size of the circle to denote magnitude
 
 I've included `no-rivers.txt` in this project; it's suitable as an
-argument to the `-shoredata` option (see below).
+argument to the `-shoredata` option (see below). Warning: This file
+is about 67 megabytes of plain text, about 3.2 million lines (each
+line represents a point on the Earth's surface).
 
 To compile under Ubuntu, you'll need to install the `mono-gmcs` package:
 
