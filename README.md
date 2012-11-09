@@ -20,7 +20,7 @@ is done one pixel at a time.
 The generated image uses:
 
 * Color to denote the time of the quake (red is recent, blue is
-  1 week ago, green is 2 weeks ago, with continuous shading for
+  3.5 days ago, green is 7 days ago, with continuous shading for
   intermediate ages)
 * A black vertical line to denote the depth
 * The size of the circle to denote magnitude
