@@ -402,6 +402,9 @@ namespace Quakemap
         public DateTime dt;
         public TimeSpan age;
 
+        public static DateTime oldest     = Constants.now;
+        public static double oldestInDays = 0.0;
+
         public override string ToString()
         {
             return "src=" + src + ", eqid=" + eqid + ", version=" + version + 
@@ -417,23 +420,28 @@ namespace Quakemap
         {
             get
             {
-                // Age 0               : red
-                // Age 3.5 days        : blue
-                // Age 7 days or older : green
+                // Color is determined relative to the age of the oldest quake
+                // Age 0         : red
+                // Age oldest/2  : blue
+                // Age oldest    : green
                 // Intermediate values are interpolated
                 int red, green, blue;
                 double ageInDays = age.TotalDays;
-                if (ageInDays > 7.0) ageInDays = 7.0;
+
+                double oldest = Quake.oldestInDays;
+                double middle = oldest / 2.0;
+
+                if (ageInDays > Quake.oldestInDays) ageInDays = oldest;
                 if (ageInDays < 0.0) ageInDays = 0.0;
                 if (Program.options.gray)
                 {
-                    red = green = blue = (int)(ageInDays / 7.0 * 255);
+                    red = green = blue = (int)(ageInDays / oldest * 255);
                 }
                 else
                 {
-                    if (ageInDays <= 3.5)
+                    if (ageInDays <= middle)
                     {
-                        double b = ageInDays / 3.5; // 0..1
+                        double b = ageInDays / (middle); // 0..1
                         blue = (int)(b * 256);
                         if (blue > 255) blue = 255;
                         red = 255 - blue;
@@ -441,7 +449,7 @@ namespace Quakemap
                     }
                     else
                     {
-                        double g = (ageInDays - 3.5) / 3.5; // 0..1
+                        double g = (ageInDays - middle) / middle; // 0..1
                         green = (int)(g * 256);
                         if (green > 255) green = 255;
                         blue = 255 - green;
@@ -449,7 +457,7 @@ namespace Quakemap
                     }
                     if (Program.options.fade)
                     {
-                        double fadeFactor = ageInDays / 7.0;
+                        double fadeFactor = ageInDays / oldest;
                         red   = (int)(255 * fadeFactor) + (int)(red   * (1.0 - fadeFactor));
                         green = (int)(255 * fadeFactor) + (int)(green * (1.0 - fadeFactor));
                         blue  = (int)(255 * fadeFactor) + (int)(blue  * (1.0 - fadeFactor));
@@ -696,11 +704,18 @@ namespace Quakemap
                                         Constants.enUS,
                                         Constants.dateStyle,
                                         out q.dt );
-                        if (!ok)
+                        if (ok)
+                        {
+                            q.age = Constants.now.Subtract(q.dt);
+                            if (q.dt < Quake.oldest)
+                            {
+                                Quake.oldest = q.dt;
+                            }
+                        }
+                        else
                         {
                             q.dt = DateTime.MinValue;
                         }
-                        q.age = Constants.now.Subtract(q.dt);
                         quakes.Add(q);
                     }
                     else
@@ -709,8 +724,10 @@ namespace Quakemap
                         Environment.Exit(1);
                     }
                 }
+                Quake.oldestInDays = Constants.now.Subtract(Quake.oldest).TotalDays;
 
                 Console.WriteLine("Got " + lineCount + " lines, " + quakes.Count + " earthquakes");
+                Console.WriteLine("Oldest: " + Quake.oldest.ToString() + ", " + Quake.oldestInDays + " days ago");
 
                 double minLat = Double.MaxValue;
                 double maxLat = Double.MinValue;
