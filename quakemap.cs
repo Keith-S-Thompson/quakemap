@@ -247,9 +247,9 @@ namespace Quakemap
             if (error != null) Console.WriteLine(error);
             Console.WriteLine("Usage: quakemape.exe [options]");
             Console.WriteLine("    -help            Show this message and exit");
-            Console.WriteLine("    -width num       Width of generated map, default is " + Default.Height);
+            Console.WriteLine("    -width num       Width of generated map, default is " + Default.Height * 2);
             Console.WriteLine("                     Sets height to width/2");
-            Console.WriteLine("    -height num      Height of generated map, default is " + Default.Height * 2);
+            Console.WriteLine("    -height num      Height of generated map, default is " + Default.Height);
             Console.WriteLine("                     Sets width to height*2");
             Console.WriteLine("    -rotation num    Rotate num degrees");
             Console.WriteLine("    -mercator        Use a Mercator projection");
