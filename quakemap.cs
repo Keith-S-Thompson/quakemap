@@ -39,19 +39,16 @@ namespace Quakemap
             public static readonly bool Gray = false;
             public static readonly ArrayList QuakeData = new ArrayList(new string[]
                 {
-                    "/home/kst/cvs-smov/downloads/eqs7day-M1.txt",
+                    "eqs7day-M1.txt",
                     "http://earthquake.usgs.gov/earthquakes/catalogs/eqs7day-M1.txt"
                 });
             public static readonly ArrayList ShoreData = new ArrayList(new string[]
                 {
-                    "/home/kst/public_html/shores.txt",
-                    @"C:\cygwin\home\keithomp\git\local\quakemap\shores.txt",
-                    "http://smov.org/~kst/shores.txt"
+                    "shores.txt"
                 });
             public static readonly ArrayList ImageFile = new ArrayList(new string[]
                 {
-                    "/home/kst/public_html/quakes.png",
-                    @"H:\public_html\quakes.png"
+                    "quakes.png"
                 });
         }
 
