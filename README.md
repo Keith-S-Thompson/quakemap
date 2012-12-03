@@ -1,3 +1,6 @@
+`quakemap` is released under GPL version 2 or later.  See the
+header comments in `quakemaps.cs` and the file `COPYING`.
+
 When I was first learning C# (for Windows Phone 7 development
 while working at Nokia), I developed this program, "quakemap", as an
 exercise. It reads map and earthquake data, either from local files or
