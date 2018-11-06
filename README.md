@@ -59,8 +59,8 @@ Then run this command:
 
     gmcs -r:System.Drawing.dll quakemap.cs
 
-This generates `quakemap.exe`, which can be executed.  `quakemap.exe
--help' shows the following usage message:
+This generates `quakemap.exe`, which can be executed.
+`quakemap.exe -help` shows the following usage message:
 
     quakemap running in /home/kst/git/quakemap
     Usage: quakemape.exe [options]
